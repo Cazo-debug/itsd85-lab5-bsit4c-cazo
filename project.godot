@@ -1,0 +1,32 @@
+config_version=5
+
+[application]
+config/name="Toot Tubes"
+run/main_scene="res://scenes/ui/Title.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/quit_on_go_back=false
+
+[autoload]
+GameState="*res://autoload/GameState.gd"
+Audio="*res://autoload/Audio.gd"
+Net="*res://autoload/Net.gd"
+
+[display]
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=450
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[input_devices]
+pointing/emulate_touch_from_mouse=true
+
+[physics]
+common/physics_ticks_per_second=60
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.235, 0.765, 0.902, 1)
