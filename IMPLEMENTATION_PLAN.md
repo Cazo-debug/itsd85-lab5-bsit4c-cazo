@@ -1,5 +1,11 @@
 # Toot Tubes: Implementation Plan
 
+> 2026-11-01 scope update: Phases 1 and 2 now include the approved
+> [sky environment revision](docs/SKY_ENVIRONMENT_REVISION.md), using the supplied
+> `toot-tubes-codex-pack/` visuals. The user selected environment first; the pack's
+> shared-ring gameplay migration remains pending. The original plan below is
+> retained as the baseline and does not mark the full v2 phases complete.
+
 ITSD 85 Lab: Mobile Game with Level Progression and Offline/Online Multiplayer
 Section: BSIT-4C · Platform: Android (APK) · Orientation: portrait · Engine: Godot 4 (GDScript)
 

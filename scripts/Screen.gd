@@ -11,8 +11,15 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 func _ready() -> void:
 	rng.randomize()
 	theme = preload("res://assets/GameTheme.tres")
-	var background: ColorRect = ColorRect.new()
-	background.color = Color("3cc3e6")
+	var background: TextureRect = TextureRect.new()
+	var gradient: Gradient = Gradient.new()
+	gradient.colors = PackedColorArray([Color("6ec6f0"), Color("bdebfb"), Color("eef9ff")])
+	gradient.offsets = PackedFloat32Array([0.0, 0.65, 1.0])
+	var texture: GradientTexture2D = GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill_from = Vector2(0.5, 0)
+	texture.fill_to = Vector2(0.5, 1)
+	background.texture = texture
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -78,7 +85,7 @@ func build_menu() -> void:
 	content.add_child(label("TOOT\nTUBES" if screen == "Title" else screen.capitalize(), 76 if screen == "Title" else 52))
 	match screen:
 		"Title":
-			content.add_child(label("Small float. Big adventure."))
+			content.add_child(label("A little float. A sky-high adventure."))
 			button("Tap to start", start)
 		"MainMenu":
 			content.add_child(label("Ahoy, %s!" % GameState.avatar.get("name", "Player")))
@@ -113,7 +120,7 @@ func build_creator() -> void:
 	var viewport: SubViewport = SubViewport.new()
 	viewport.size = Vector2i(656, 480)
 	viewport.own_world_3d = true
-	viewport.transparent_bg = true
+	viewport.transparent_bg = false
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	preview.add_child(viewport)
 	model = AvatarModel.new()
@@ -127,24 +134,38 @@ func build_creator() -> void:
 	disc.radial_segments = 32
 	water.mesh = disc
 	water.position.y = -0.36
-	water.material_override = AvatarModel.material(Color("1a8fb8"))
+	water.material_override = SkyEnvironment.water()
+	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	viewport.add_child(water)
 	var camera: Camera3D = Camera3D.new()
 	viewport.add_child(camera)
 	camera.position = Vector3(3.7, 3.3, 5.5)
-	camera.look_at(Vector3(0, 0.7, 0))
+	camera.look_at(Vector3(0, 0.0, 0))
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 5.9
-	var light: DirectionalLight3D = DirectionalLight3D.new()
-	light.rotation_degrees = Vector3(-45, -30, 0)
-	light.shadow_enabled = false
-	viewport.add_child(light)
-	var environment: WorldEnvironment = WorldEnvironment.new()
-	environment.environment = Environment.new()
-	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.environment.ambient_light_color = Color.WHITE
-	environment.environment.ambient_light_energy = 0.65
-	viewport.add_child(environment)
+	camera.size = 7.0
+	SkyEnvironment.install(viewport)
+	var island: MeshInstance3D = MeshInstance3D.new()
+	var underside: CylinderMesh = CylinderMesh.new()
+	underside.top_radius = 2.8
+	underside.bottom_radius = 0.2
+	underside.height = 1.6
+	underside.radial_segments = 16
+	island.mesh = underside
+	island.material_override = SkyEnvironment.cliff()
+	island.position.y = -1.25
+	island.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	viewport.add_child(island)
+	var rim: MeshInstance3D = MeshInstance3D.new()
+	var rim_mesh: TorusMesh = TorusMesh.new()
+	rim_mesh.inner_radius = 2.55
+	rim_mesh.outer_radius = 2.9
+	rim_mesh.rings = 24
+	rim_mesh.ring_segments = 8
+	rim.mesh = rim_mesh
+	rim.material_override = AvatarModel.material(Color("7acb3b"))
+	rim.position.y = -0.35
+	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	viewport.add_child(rim)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size.y = 280

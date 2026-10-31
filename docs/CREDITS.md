@@ -9,3 +9,7 @@
 - Audio: no audio assets included in Phase 1. Original generated effects and optional CC0 music are Phase 5 work; credit any supplied music before inclusion.
 
 Additional bundled GUT font copyright/license notices are preserved in `docs/licenses/` from the corresponding Google Fonts OFL family directories.
+
+## Sky environment revision (2026-11-01)
+
+Original procedural Godot scenery: striped cliffs, clouds, floating islands, umbrellas, balloons and checker/finish markers. Visual specifications and formulas were supplied by the user in `toot-tubes-codex-pack/`; no commercial game assets, models, screenshots or external web fonts are bundled. The social-media screenshot and reference HTML/images are design references only. Fredoka remains the in-game font under the existing OFL credit.

@@ -41,7 +41,7 @@ func capture(name: String) -> void:
 	if not captures:
 		return
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://docs/screenshots/phase2_%s.png" % name)
+	root.get_texture().get_image().save_png("res://docs/screenshots/phase2_sky_%s.png" % name)
 	print("CAPTURE ", name)
 
 func verify() -> void:
@@ -55,7 +55,10 @@ func verify() -> void:
 	current_scene = level
 	for frame: int in range(10):
 		await physics_frame
-	check(level.state == level.State.COUNTDOWN, "Race must start with countdown")
+	check(level.state == level.State.INTRO, "Race must start with course overview")
+	await capture("overview")
+	while level.state == level.State.INTRO:
+		await physics_frame
 	var water: Vector2 = level.camera.unproject_position(level.player.global_position + Vector3(0, 0, -6))
 	touch(water, true)
 	await process_frame
@@ -91,11 +94,15 @@ func verify() -> void:
 		print("RENDER draw_calls=", Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), " primitives=", Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 	var waypoint: int = 1
 	var last_toot: float = -1.0
+	var captured_play: bool = false
 	var pickups: Array[int] = [0]
 	for bean: Node3D in level.course.beans:
 		bean.bean_collected.connect(func(_body: Node3D) -> void: pickups[0] += 1)
 	var points: Array = level.definition.waypoints
 	while level.state == level.State.RACING:
+		if captures and not captured_play and level.race_time >= 5.0:
+			captured_play = true
+			await capture("play")
 		var target: Vector3 = Vector3(points[waypoint][0], 0, -points[waypoint][1])
 		if level.player.position.distance_to(target) < 3.5 and waypoint < points.size() - 1:
 			waypoint += 1

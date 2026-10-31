@@ -107,3 +107,71 @@ Android debug export succeeded: `export/TootTubes-phase2-debug.apk`, 57,743,865 
 - [x] Commit with `Phase 2: 3D race core and Level 1`.
 
 Stop here until the user checks Gate 2 and requests Phase 3.
+
+---
+
+# Phase 1/2 sky environment revision — 2026-11-01
+
+The user requested review of `toot-tubes-codex-pack/` and an environment like
+the supplied sky-course screenshot, then explicitly selected **Sky environment
+first**. Reviewed both reference images, the HTML sample/formulas, and the v2
+Phase 1/2/spec sections. The pack remains source material; it has not replaced
+the active gameplay contract. See [the scoped review](SKY_ENVIRONMENT_REVISION.md).
+
+Implemented a sky gradient and shared lighting; six finite water segments;
+40 m striped cliffs fading into haze; green inner rims and closed bank joints;
+128 cloud lobes in one MultiMesh; nine floating islands; three balloons;
+bank/island umbrellas; red/white checkpoint buoys; checker strips and a full-width
+yellow finish arch. Added a two-second whole-course intro and a smooth camera
+glide during the three-second countdown. Phase 1 now uses the sky palette and
+a floating-pool avatar preview. Existing avatar/save and solo-race behavior remain.
+
+Validation on Godot 4.7.2 / GUT 9.6.1:
+
+```text
+Scripts                6
+Tests                 23
+Passing Tests         23
+Asserts              468
+All tests passed!
+```
+
+New checks cover confined water/shared materials, cliff depth, shallow collision
+shapes, deterministic scenery, side-wall coverage near every turn, closed end
+caps and camera framing. Existing impulse/bounce, avatar/save, UI, pickup and race
+checks pass. Countdown assertions were extended with the new blocked-input intro;
+none of the prior test coverage was removed.
+
+Rendered verification at 720 x 1280 on Intel UHD Graphics completed the course
+in 16.73–16.75 seconds, all eight pickups, both checkpoints, three saved stars,
+and no boundary/speed violations. A measurement-only run reported approximately
+60 FPS, peak 122 draw calls and 47,384 primitives. This uses Godot frame-delta
+monitors on this desktop, not a real-phone or wall-clock benchmark. A separate
+screenshot-capture run showed an 85 ms maximum frame while capture tooling was
+active; the measurement-only run reported 16.666 ms. Screenshots preserve the
+earlier baseline and use `phase1_sky_*` / `phase2_sky_*`; avatar options were cycled
+and the preview/overview/play/finish images visually inspected.
+
+Signed debug export: `export/TootTubes-phase2-sky-debug.apk`, 57,756,615 bytes
+(57.8 MB decimal), version `0.2-sky` / code 3, existing prototype package,
+ARMv7 + ARM64. APK signature verification passed (v2/v3). Archive check confirms
+Level 1 is included and reference-pack/docs/tests/tools/addons/keystores are not.
+The export and signing identity remain outside Git. No physical-phone install
+or FPS test was performed.
+
+Decisions: adopt the reference environment while retaining the existing Level 1
+route. Use ascending shader smoothstep edges to avoid undefined reversed-edge
+behavior. Hole cut-outs are deferred with hole physics, rather than drawing
+holes that the float cannot fall through. Shared-ring physics, buddy, duo, second
+avatar and the v2 gameplay migration remain pending. Phase 3 has not started.
+
+## Revision gate
+
+- [x] 23 automated tests / 468 assertions pass using `tools/run_tests.sh`.
+- [x] Rendered race and avatar-preview checks pass; debug APK exported/verified.
+- [ ] User checks avatar options, save and Back in the revised preview.
+- [ ] User plays Level 1: sky height, camera glide, collision and steering feel.
+- [ ] User installs the new APK and checks portrait, touch and smoothness on phone.
+- [x] Commit: `Phase 2: sky environment revision for Phases 1 and 2`.
+
+Environment revision complete. Full v2 Phase 2 and human/device gates remain pending.

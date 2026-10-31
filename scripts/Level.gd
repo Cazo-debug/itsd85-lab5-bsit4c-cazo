@@ -1,10 +1,11 @@
 class_name RaceLevel
 extends Node3D
 
-enum State { COUNTDOWN, RACING, FINISHED }
+enum State { INTRO, COUNTDOWN, RACING, FINISHED }
 @export var level_number: int = 1
 @export var auto_return: bool = true
-var state: State = State.COUNTDOWN
+var state: State = State.INTRO
+var intro_time: float = 0.0
 var race_time: float = 0.0
 var countdown_time: float = 0.0
 var finish_elapsed: float = 0.0
@@ -39,31 +40,24 @@ func _ready() -> void:
 	add_child(camera)
 	camera.target = player
 	camera.snap_to_player()
+	var last_segment: Dictionary = definition.segments[-1]
+	camera.show_overview(last_segment.d + last_segment.length)
 	player.bumped.connect(camera.shake)
 	player.popped.connect(camera.shake)
-	var sunlight: DirectionalLight3D = DirectionalLight3D.new()
-	sunlight.rotation_degrees = Vector3(-55, -25, 0)
-	sunlight.shadow_enabled = false
-	add_child(sunlight)
-	var environment: WorldEnvironment = WorldEnvironment.new()
-	environment.environment = Environment.new()
-	environment.environment.background_mode = Environment.BG_COLOR
-	environment.environment.background_color = Color("3cc3e6")
-	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.environment.ambient_light_color = Color("fff6df")
-	environment.environment.ambient_light_energy = 0.6
-	add_child(environment)
+	SkyEnvironment.install(self)
 	tap_input = TapInput.new()
 	tap_input.player = player
 	tap_input.camera = camera
 	add_child(tap_input)
 	hud = preload("res://scenes/ui/HUD.tscn").instantiate() as RaceHUD
 	add_child(hud)
-	hud.big_goal.text = definition.goal_text
+	hud.big_goal.text = "Lazy River above the clouds"
+	hud.countdown_label.hide()
+	hud.hint_label.hide()
 	hud.goal_label.text = definition.name
 	hud.back_requested.connect(return_to_menu)
 	show_hint = not GameState.seen_tutorial
-	hud.hint_label.visible = show_hint
+	hud.hint_label.hide()
 	course.finish.finish_crossed.connect(_on_finish_crossed)
 	for checkpoint: CoursePiece in course.checkpoints:
 		checkpoint.checkpoint_reached.connect(_on_checkpoint)
@@ -72,7 +66,14 @@ func _ready() -> void:
 	hud.update_race(time_left, player.gas, 0.0, false)
 
 func _physics_process(delta: float) -> void:
-	if state == State.COUNTDOWN:
+	if state == State.INTRO:
+		intro_time += delta
+		if intro_time >= 2.0:
+			state = State.COUNTDOWN
+			camera.overview = false
+			hud.big_goal.text = definition.goal_text
+			hud.countdown_label.show()
+	elif state == State.COUNTDOWN:
 		countdown_time += delta
 		hud.countdown_label.text = str(maxi(1, 3 - int(countdown_time)))
 		if countdown_time >= 3.0:
@@ -103,6 +104,7 @@ func begin_race() -> void:
 	player.controls_enabled = true
 	tap_input.enabled = true
 	hud.countdown_label.text = "TOOT!"
+	hud.hint_label.visible = show_hint
 
 func _on_tooted(_direction: Vector3) -> void:
 	show_hint = false

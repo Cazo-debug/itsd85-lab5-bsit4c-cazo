@@ -12,6 +12,8 @@ signal bean_collected(player: FloatPlayer)
 @export var distance: float = 0.0
 var cooldown: float = 0.0
 var animation_time: float = 0.0
+var rim_size: Vector3 = Vector3.ZERO
+var rim_at: Vector3 = Vector3.ZERO
 var visual: MeshInstance3D
 
 func _ready() -> void:
@@ -71,29 +73,31 @@ func trigger(width: float, depth: float = 1.5) -> void:
 func build_water() -> void:
 	var mesh: PlaneMesh = PlaneMesh.new()
 	mesh.size = Vector2(dimensions.x, dimensions.z)
-	mesh.subdivide_width = 40
-	mesh.subdivide_depth = 80
+	mesh.subdivide_width = maxi(1, ceili(dimensions.x / 1.5) - 1)
+	mesh.subdivide_depth = maxi(1, ceili(dimensions.z / 1.5) - 1)
 	visual = mesh_part(mesh, Color.WHITE)
-	var material: ShaderMaterial = ShaderMaterial.new()
-	material.shader = preload("res://shaders/water.gdshader")
-	visual.material_override = material
+	visual.material_override = SkyEnvironment.water()
 
 func build_bank() -> void:
-	box(dimensions, Color("ff9f45"), Vector3(0, 0.2, 0))
-	box(Vector3(dimensions.x + 0.06, 0.25, dimensions.z + 0.04), Color("7acb3b"), Vector3(0, dimensions.y / 2.0 + 0.32, 0))
+	var cliff: MeshInstance3D = box(Vector3(dimensions.x, 40.9, dimensions.z), Color.WHITE, Vector3(0, -19.55, 0))
+	cliff.name = "Cliff"
+	cliff.material_override = SkyEnvironment.cliff()
+	var size: Vector3 = rim_size if rim_size != Vector3.ZERO else Vector3(0.7, 0.32, dimensions.z + 0.7)
+	box(size, Color("7acb3b"), rim_at + Vector3(0, 0.91, 0)).name = "GrassRim"
 	var shape: BoxShape3D = BoxShape3D.new()
-	shape.size = Vector3(dimensions.x, 4.0, dimensions.z)
+	shape.size = Vector3(dimensions.x, 2.9, dimensions.z)
 	collision(shape)
+	(get_child(-1) as CollisionShape3D).position.y = -0.55
 
 func build_island() -> void:
 	cylinder(Vector2(radius, 0.9), Color("ff9f45"), Vector3(0, 0.15, 0))
-	cylinder(Vector2(radius + 0.04, 0.16), Color("7acb3b"), Vector3(0, 0.66, 0))
+	cylinder(Vector2(radius + 0.04, 0.16), Color("ffa24c"), Vector3(0, 0.66, 0))
 	var rim: TorusMesh = TorusMesh.new()
 	rim.inner_radius = radius - 0.13
 	rim.outer_radius = radius + 0.13
 	rim.rings = 16
 	rim.ring_segments = 8
-	mesh_part(rim, Color("9be44a"), Vector3(0, 0.68, 0))
+	mesh_part(rim, Color("7acb3b"), Vector3(0, 0.68, 0))
 	var shape: CylinderShape3D = CylinderShape3D.new()
 	shape.radius = radius
 	shape.height = 2.0
@@ -101,40 +105,55 @@ func build_island() -> void:
 
 func build_finish() -> void:
 	trigger(course_width, 2.5)
-	for side: float in [-1.0, 1.0]:
-		cylinder(Vector2(0.18, 3.0), Color.WHITE, Vector3(side * 2.4, 1.2, 0))
 	var ring: TorusMesh = TorusMesh.new()
-	ring.inner_radius = 1.9
-	ring.outer_radius = 2.25
-	ring.rings = 16
-	ring.ring_segments = 12
-	var hoop: MeshInstance3D = mesh_part(ring, Color("ffcf50"), Vector3(0, 2.2, 0))
+	ring.inner_radius = course_width / 2.0 - 0.45
+	ring.outer_radius = course_width / 2.0 + 0.45
+	ring.rings = 40
+	ring.ring_segments = 10
+	var hoop: MeshInstance3D = mesh_part(ring, Color("ffd23a"))
 	hoop.rotation.x = PI / 2.0
-	# Each color shares one draw call for the little checkered flag tiles.
+	box(Vector3(5, 1.25, 0.15), Color("ff7a3d"), Vector3(0, course_width / 2.0 + 1.1, 0))
+	var sign: Label3D = Label3D.new()
+	sign.text = "FINISH"
+	sign.font = preload("res://assets/fonts/Fredoka.ttf")
+	sign.font_size = 96
+	sign.pixel_size = 0.01
+	sign.outline_size = 5
+	sign.position = Vector3(0, course_width / 2.0 + 1.1, 0.09)
+	add_child(sign)
+	build_checker(course_width)
+
+func build_checker(width: float) -> void:
 	for color_index: int in range(2):
-		var mesh: BoxMesh = BoxMesh.new()
-		mesh.size = Vector3(0.4, 0.4, 0.12)
+		var mesh: PlaneMesh = PlaneMesh.new()
+		mesh.size = Vector2(width / 8.0, 0.7)
 		var tiles: MultiMesh = MultiMesh.new()
 		tiles.transform_format = MultiMesh.TRANSFORM_3D
 		tiles.mesh = mesh
-		tiles.instance_count = 12
+		tiles.instance_count = 8
 		var tile_index: int = 0
-		for x: int in range(12):
-			for y: int in range(2):
-				if (x + y) % 2 == color_index:
-					tiles.set_instance_transform(tile_index, Transform3D(Basis.IDENTITY, Vector3(-2.2 + x * 0.4, 4.4 + y * 0.4, 0)))
+		for x: int in range(8):
+			for z: int in range(2):
+				if (x + z) % 2 == color_index:
+					tiles.set_instance_transform(tile_index, Transform3D(Basis.IDENTITY, Vector3(-width / 2.0 + (x + 0.5) * width / 8.0, 0.14, (z - 0.5) * 0.7)))
 					tile_index += 1
 		var instance: MultiMeshInstance3D = MultiMeshInstance3D.new()
 		instance.multimesh = tiles
-		instance.material_override = AvatarModel.material(Color.WHITE if color_index == 0 else Color("1e2329"))
+		instance.material_override = AvatarModel.material(Color("f6f6f2") if color_index == 0 else Color("1e2329"))
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(instance)
 
 func build_checkpoint() -> void:
 	trigger(course_width)
 	for side: float in [-1.0, 1.0]:
-		cylinder(Vector2(0.38, 0.65), Color("ffcf50"), Vector3(side * (course_width / 2.0 - 0.7), 0.25, 0))
-		cylinder(Vector2(0.17, 1.1), Color.WHITE, Vector3(side * (course_width / 2.0 - 0.7), 0.95, 0))
+		var at: Vector3 = Vector3(side * (course_width / 2.0 - 0.6), 0.25, 0)
+		var buoy: SphereMesh = SphereMesh.new()
+		buoy.radius = 0.5
+		buoy.height = 1.0
+		buoy.radial_segments = 12
+		buoy.rings = 8
+		mesh_part(buoy, Color("e94040"), at)
+		cylinder(Vector2(0.51, 0.18), Color("f6f6f2"), at + Vector3(0, 0.05, 0))
 
 func build_bean() -> void:
 	var capsule: CapsuleMesh = CapsuleMesh.new()

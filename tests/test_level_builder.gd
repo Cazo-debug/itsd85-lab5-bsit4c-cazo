@@ -49,7 +49,12 @@ func test_countdown_timeout_checkpoint_and_finish_rules() -> void:
 	level.auto_return = false
 	add_child(level)
 	level.set_physics_process(false)
+	assert_eq(level.state, RaceLevel.State.INTRO)
+	assert_false(level.player.toot_toward(Vector3(0, 0, -20)))
+	level._physics_process(2.0)
 	assert_eq(level.state, RaceLevel.State.COUNTDOWN)
+	assert_eq(level.race_time, 0.0)
+	assert_false(level.camera.overview)
 	assert_false(level.player.toot_toward(Vector3(0, 0, -20)))
 	level._physics_process(2.99)
 	assert_eq(level.race_time, 0.0)
