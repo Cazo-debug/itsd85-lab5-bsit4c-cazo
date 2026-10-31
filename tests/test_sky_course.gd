@@ -15,7 +15,7 @@ func test_water_is_confined_to_segments_and_material_is_shared() -> void:
 		var mesh: PlaneMesh = water.visual.mesh as PlaneMesh
 		assert_almost_eq(mesh.size.x, float(segments[index].width) + 0.02, 0.001)
 		assert_almost_eq(mesh.size.y, float(segments[index].length) + 0.02, 0.001)
-		assert_eq(water.visual.material_override, SkyEnvironment.water())
+		assert_eq(water.visual.material_override, builder.water_material)
 		assert_eq(water.position.y, 0.0)
 
 func test_cliffs_have_depth_but_collisions_stay_near_water() -> void:

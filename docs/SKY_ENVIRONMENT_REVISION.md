@@ -1,6 +1,6 @@
 # Phase 1 and 2 review: sky environment
 
-Approved scope, 2026-11-01: **Sky environment first**. The supplied
+Approved scope, 2026-11-01: **Sky environment first**. Follow-up correction: the six circular orange areas are holes, with falling and checkpoint respawn now implemented. The supplied
 `toot-tubes-codex-pack/` is reference material. Its shared-ring mechanics and
 later-phase instructions are not authorization to replace the existing gameplay.
 
@@ -9,9 +9,9 @@ later-phase instructions are not authorization to replace the existing gameplay.
 | Area | This revision | Still pending from the v2 pack |
 |---|---|---|
 | Phase 1 | Keep saves, navigation, avatar choices and tests; introduce the sky palette and a floating-pool avatar preview | Two-rider model, second avatar, team-assigned ring colors |
-| Phase 2 environment | Segment-sized water, 40 m striped cliffs, green inner rims, closed turn joints, gradient sky, clouds, floating islands, balloons, umbrellas, checker strips and finish arch | Hole cut-outs together with working fall/respawn mechanics |
+| Phase 2 environment | Segment-sized water, 40 m striped cliffs, green inner rims, closed turn joints, gradient sky, clouds, floating islands, balloons, umbrellas, checker strips, finish arch and six open holes | Shared-ring integration for holes |
 | Phase 2 presentation | Two-second course overview, three-second countdown glide, reference follow camera and shared lighting | Two-seat HUD and buddy tutorial |
-| Phase 2 gameplay | Existing solo float, eight beans, two checkpoints, finish/save and 75-second timer remain playable | Shared-ring physics, computer buddy, duo input, holes and revised 12-bean layout |
+| Phase 2 gameplay | Existing solo float, eight beans, two checkpoints, finish/save and 75-second timer; holes now trigger a 0.9-second drop and checkpoint respawn | Shared-ring physics, computer buddy, duo input and revised 12-bean layout |
 
 This completes the environment revision, **not the entire v2 Phase 2 gate**.
 Phase 3 obstacles, rivals and additional courses have not started.
@@ -32,8 +32,7 @@ water material and use world coordinates to keep the waves continuous.
 
 Shader adjustments: use ascending `smoothstep` edges with negated height for
 the same downward haze/sky gradient. Reversed edges in the supplied examples
-have undefined GLSL behavior. Hole uniforms/discard are deferred until functional
-holes are introduced, so the player cannot visually pass across a fake hole.
+have undefined GLSL behavior. Each course shares its own water material with hole uniforms and discard; the avatar preview retains uncut water. Shafts have no caps or solid collision.
 
 The reference HTML remains a reference, with no browser/CDN dependency in the
 game. Its folder is excluded from Android exports. Existing screenshots are
@@ -48,7 +47,7 @@ See [PHASE2_TESTING.md](PHASE2_TESTING.md) for commands and phone installation.
 - [ ] Avatar preview rotates and all options/save/back work.
 - [ ] Sky, cliffs and clouds make the course feel elevated.
 - [ ] Camera glide and steering feel comfortable on desktop.
-- [ ] Banks contain the float at every turn; beans and finish still work.
+- [ ] Banks contain the float at every turn; holes drop/respawn it; beans and finish still work.
 - [ ] Install the sky debug APK and check portrait/touch/FPS on a real phone.
 
 Automated evidence and measured rendering costs are recorded in

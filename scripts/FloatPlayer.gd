@@ -5,6 +5,8 @@ signal tooted(direction: Vector3)
 signal popped
 signal finished
 signal bumped
+signal fell
+signal respawned
 
 const MAX_GAS: int = 3
 const REFILL_TIME: float = 1.5
@@ -21,6 +23,11 @@ var trail: CPUParticles3D
 var visual_time: float = 0.0
 var pulse: float = 0.0
 var bump_cooldown: float = 0.0
+var falling: bool = false
+var fall_elapsed: float = 0.0
+var fall_velocity: Vector3 = Vector3.ZERO
+var shadow: MeshInstance3D
+const FALL_DURATION: float = 0.9
 
 func _ready() -> void:
 	gravity_scale = 0.0
@@ -51,7 +58,7 @@ func _ready() -> void:
 	trail = RaceEffects.ripples()
 	trail.position.y = 0.14
 	add_child(trail)
-	var shadow: MeshInstance3D = MeshInstance3D.new()
+	shadow = MeshInstance3D.new()
 	var quad: PlaneMesh = PlaneMesh.new()
 	quad.size = Vector2(2.8, 2.8)
 	shadow.mesh = quad
@@ -99,6 +106,11 @@ func advance_gas(delta: float) -> void:
 		refill_elapsed = 0.0
 
 func _physics_process(delta: float) -> void:
+	if falling:
+		fall_elapsed += delta
+		if fall_elapsed >= FALL_DURATION:
+			respawn()
+		return
 	if not freeze:
 		advance_gas(delta)
 	bump_cooldown = maxf(0.0, bump_cooldown - delta)
@@ -108,6 +120,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 
 func _process(delta: float) -> void:
 	if model == null:
+		return
+	if falling:
+		var t: float = minf(fall_elapsed / FALL_DURATION, 1.0)
+		model.position = fall_velocity * fall_elapsed + Vector3(0, -10.0 * t * t, 0)
+		model.scale = Vector3.ONE * lerpf(1.0, 0.3, t)
 		return
 	visual_time += delta
 	pulse = move_toward(pulse, 0.0, delta * 4.0)
@@ -133,3 +150,40 @@ func _on_body_entered(_body: Node) -> void:
 func pop() -> void:
 	# Spike/respawn behavior is added with the obstacles in Phase 3.
 	popped.emit()
+
+func fall_into_hole() -> bool:
+	if falling or freeze or not controls_enabled:
+		return false
+	falling = true
+	fall_elapsed = 0.0
+	fall_velocity = linear_velocity * 0.2
+	linear_velocity = Vector3.ZERO
+	freeze = true
+	controls_enabled = false
+	trail.emitting = false
+	trail.hide()
+	shadow.hide()
+	fell.emit()
+	return true
+
+func respawn() -> void:
+	if not falling:
+		return
+	global_position = checkpoint + Vector3(0, 0, -3.0)
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	cancel_fall()
+	freeze = false
+	sleeping = false
+	controls_enabled = true
+	reset_physics_interpolation()
+	respawned.emit()
+
+func cancel_fall() -> void:
+	falling = false
+	fall_elapsed = 0.0
+	model.position = Vector3.ZERO
+	model.scale = Vector3.ONE
+	model.rotation = Vector3.ZERO
+	trail.show()
+	shadow.show()

@@ -9,6 +9,8 @@ var start: Marker3D
 var finish: CoursePiece
 var water_segments: Array[CoursePiece] = []
 var decor: SkyDecor
+var holes: Array[CourseHole] = []
+var water_material: ShaderMaterial
 const BANK_THICKNESS: float = 3.2
 
 func piece(scene_name: String, at: Vector3) -> CoursePiece:
@@ -22,9 +24,25 @@ func build(data: Dictionary) -> void:
 		child.free()
 	banks.clear()
 	water_segments.clear()
+	holes.clear()
 	beans.clear()
 	checkpoints.clear()
 	definition = data.duplicate(true)
+	# One shared material per course, so preview/test worlds cannot share holes.
+	water_material = SkyEnvironment.water().duplicate() as ShaderMaterial
+	var cutouts: PackedVector3Array = PackedVector3Array()
+	cutouts.resize(8)
+	var hole_data: Array = data.get("holes", [])
+	assert(hole_data.size() <= 8, "Water supports at most eight holes")
+	for index: int in range(hole_data.size()):
+		var entry: Dictionary = hole_data[index]
+		cutouts[index] = Vector3(entry.pos[0], -entry.pos[1], entry.radius)
+		var hole: CourseHole = preload("res://scenes/course/Hole.tscn").instantiate() as CourseHole
+		hole.position = LevelDefs.world_point(entry.pos)
+		hole.radius = entry.radius
+		holes.append(hole)
+		add_child(hole)
+	water_material.set_shader_parameter("holes", cutouts)
 	var finish_d: float = data.finish_d
 	var segments: Array = data.segments
 	for index: int in range(segments.size()):
@@ -33,6 +51,7 @@ func build(data: Dictionary) -> void:
 		water.dimensions = Vector3(segment.width + 0.02, 0, segment.length + 0.02)
 		water_segments.append(water)
 		add_child(water)
+		water.visual.material_override = water_material
 		for side: float in [-1.0, 1.0]:
 			var wall_x: float = segment.x + side * segment.width / 2.0
 			var bank: CoursePiece = piece("Bank", Vector3(wall_x + side * BANK_THICKNESS / 2.0, 0, -segment.d - segment.length / 2.0))

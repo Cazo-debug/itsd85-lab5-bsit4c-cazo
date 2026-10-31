@@ -44,6 +44,7 @@ func _ready() -> void:
 	camera.show_overview(last_segment.d + last_segment.length)
 	player.bumped.connect(camera.shake)
 	player.popped.connect(camera.shake)
+	player.fell.connect(camera.shake)
 	SkyEnvironment.install(self)
 	tap_input = TapInput.new()
 	tap_input.player = player
@@ -86,6 +87,8 @@ func _physics_process(delta: float) -> void:
 		hud.hint_arrow.visible = show_hint and race_time >= 0.65
 		if time_left <= 0.0:
 			end_level(false)
+		else:
+			check_holes()
 	elif auto_return:
 		finish_elapsed += delta
 		if finish_elapsed >= 2.0:
@@ -123,13 +126,22 @@ func _on_bean(_body: FloatPlayer) -> void:
 	pass
 
 func _on_finish_crossed(body: FloatPlayer) -> void:
-	if body == player and state == State.RACING:
+	if body == player and state == State.RACING and not player.falling:
 		end_level(time_left > 0.0)
+
+func check_holes() -> void:
+	if player.falling or not player.controls_enabled:
+		return
+	for hole: CourseHole in course.holes:
+		if hole.contains_center(player.global_position):
+			player.fall_into_hole()
+			break
 
 func end_level(won: bool) -> void:
 	if state != State.RACING:
 		return
 	state = State.FINISHED
+	player.cancel_fall()
 	tap_input.enabled = false
 	player.controls_enabled = false
 	player.freeze = true

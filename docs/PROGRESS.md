@@ -175,3 +175,48 @@ avatar and the v2 gameplay migration remain pending. Phase 3 has not started.
 - [x] Commit: `Phase 2: sky environment revision for Phases 1 and 2`.
 
 Environment revision complete. Full v2 Phase 2 and human/device gates remain pending.
+
+---
+
+# Circular-hole correction — 2026-11-01
+
+User clarified that the circular orange areas are holes where the float falls,
+not solid islands. Replaced all six existing Level 1 island positions with holes;
+the surrounding orange banks remain solid. This clarification authorizes the
+hole behavior previously deferred by the environment-only scope. It does not
+start shared rings, duo, rivals or Phase 3.
+
+Each hole has a white foam rim, an orange open shaft (no top/bottom cap), a water
+shader cut-out, and no solid collider. One shader material is shared within each
+course; its hole uniforms cannot contaminate the avatar preview or another level.
+Center distance under radius minus 0.2 triggers a 0.9-second shrinking drop.
+Steering, pickups and finish are blocked during the fall. Respawn is three metres
+past the saved checkpoint, with zero velocity and restored controls. The clock
+continues; timeout cancels the fall and cannot restore input after the race ends.
+Before reaching a checkpoint, respawn uses the starting position plus three metres.
+
+Validation: `tools/run_tests.sh` passed **26 tests / 523 assertions** across seven
+scripts, including the new hole tests and all previous checks. Tests cover all
+six cut-outs/open shafts, safe edge versus falling center, repeated-trigger guard,
+blocked steering, actual visual descent, checkpoint respawn and timeout during a
+fall. The full headless race still finishes in 16.73 seconds with all eight beans,
+both checkpoints and three stars.
+
+`tools/verify_holes.gd` passed with the real rendered race: teleport into the first
+opening, detect the fall through the normal race loop, reject input, observe the
+drop, respawn and verify that the timer continued. Visually reviewed screenshots
+are `docs/screenshots/phase2_holes_course.png`, `phase2_holes_fall.png` and
+`phase2_holes_respawn.png`; earlier sky screenshots remain as historical evidence.
+
+Updated debug build: `export/TootTubes-phase2-holes-debug.apk`, version `0.2-holes`
+/ code 4, 57,761,075 bytes. Signature verification passed (v2/v3); archive checks
+confirmed the remapped Hole scene and reference/test/tool/secret exclusions.
+Physical phone behavior remains a manual check. Existing user changes
+to `project.godot` and the untracked reference pack are preserved outside this commit.
+
+## Correction gate
+
+- [x] Tests, full scripted race and rendered hole/respawn check pass.
+- [ ] Drift into an opening; confirm a fall instead of a bounce.
+- [ ] Reach a checkpoint, fall again, and confirm the new respawn location.
+- [ ] Install the updated APK and check the same behavior on the phone.

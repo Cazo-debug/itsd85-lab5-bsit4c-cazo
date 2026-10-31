@@ -14,7 +14,8 @@ const LEVELS: Array[Dictionary] = [{
 		{"d": 96.0, "length": 24.0, "width": 14.0, "x": 0.0},
 		{"d": 120.0, "length": 30.0, "width": 14.0, "x": 1.0}
 	],
-	"islands": [
+	"islands": [],
+	"holes": [
 		{"pos": [-3.5, 18.0], "radius": 1.8},
 		{"pos": [5.0, 41.0], "radius": 1.8},
 		{"pos": [-4.0, 65.0], "radius": 1.6},

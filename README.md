@@ -41,4 +41,6 @@ For rendered desktop evidence, omit `--headless --fixed-fps 60` and append `-- -
 
 See `docs/PROGRESS.md` for validation and Gate 2. `IMPLEMENTATION_PLAN.md` and `AGENTS.md` define later scope. GDD headings await the original lab PDF template.
 
-See [the Phase 1/2 sky revision](docs/SKY_ENVIRONMENT_REVISION.md) for the reference-pack review and remaining shared-ring scope. The current phone build is `export/TootTubes-phase2-sky-debug.apk`.
+See [the Phase 1/2 sky revision](docs/SKY_ENVIRONMENT_REVISION.md) for the reference-pack review and remaining shared-ring scope. The current phone build is `export/TootTubes-phase2-holes-debug.apk`.
+
+The six circular orange areas are open holes: falling blocks steering for 0.9 seconds, then respawns you three metres past your last checkpoint. The timer continues.

@@ -2,12 +2,17 @@ shader_type spatial;
 render_mode unshaded, cull_disabled;
 uniform vec3 deep : source_color = vec3(0.133, 0.655, 0.839);
 uniform vec3 shallow : source_color = vec3(0.310, 0.816, 0.933);
+// World x, world z, radius. Unused entries have radius zero.
+uniform vec3 holes[8];
 varying vec3 wp;
 void vertex() {
 	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	VERTEX.y += sin(wp.x * 0.35 + TIME * 1.3) * 0.06 + sin(wp.z * 0.27 + TIME * 1.1) * 0.06;
 }
 void fragment() {
+	for (int i = 0; i < 8; i++) {
+		if (length(wp.xz - holes[i].xy) < holes[i].z) { discard; }
+	}
 	float band = sin(wp.x * 0.18 + wp.z * 0.12 + TIME * 0.6) * 0.5 + 0.5;
 	vec3 col = mix(deep, shallow, band);
 	float caustic = sin(wp.x * 1.3 + TIME) * sin(wp.z * 1.1 - TIME * 0.8) + sin((wp.x + wp.z) * 0.7 + TIME * 0.6);
