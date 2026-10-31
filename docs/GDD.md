@@ -1,6 +1,6 @@
 # Toot Tubes - Game Design Document
 
-Status: Phase 1 foundation. These 11 headings are provisional because the lab PDF and its exact template were not supplied. Game rules below follow IMPLEMENTATION_PLAN.md Section 0; future features are planned, not shipped.
+Status: Phases 1 and 2 implemented (foundation and solo Level 1). These 11 headings are provisional because the lab PDF and its exact template were not supplied. Game rules below follow IMPLEMENTATION_PLAN.md Section 0; the other four courses, bots, multiplayer, full pause/results screens and audio remain planned.
 
 ## 1. Title and pitch
 Toot Tubes: players on pool floats race through an original 3D water park. The only way to move is to toot.

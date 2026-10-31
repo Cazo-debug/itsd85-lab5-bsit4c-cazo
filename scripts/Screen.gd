@@ -84,13 +84,23 @@ func build_menu() -> void:
 			content.add_child(label("Ahoy, %s!" % GameState.avatar.get("name", "Player")))
 			for entry: Array in [["Play", "ModeSelect"], ["Avatar", "AvatarCreator"], ["Settings", "Settings"], ["Credits", "Credits"]]:
 				button(entry[0], go.bind(entry[1]))
-		"ModeSelect": content.add_child(label("Your next adventure is coming.\nRacing arrives in Phase 2."))
+		"ModeSelect":
+			content.add_child(label("Lazy River\nToot to the finish ring in 75 seconds"))
+			button("Play Level 1", play_level_one)
+			if not GameState.last_result.is_empty():
+				var result: Dictionary = GameState.last_result
+				content.add_child(label("Last race: %d stars · %.1f s" % [result.stars, result.time] if result.won else "Time's up! Give it another go.", 28))
 		"Settings": content.add_child(label("Settings controls arrive in Phase 5."))
 		"Credits": content.add_child(label("Original primitive-mesh artwork\nFredoka — OFL\nGodot & GUT — MIT\nFull credits: docs/CREDITS.md"))
 	var bottom_space: Control = Control.new()
 	bottom_space.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(bottom_space)
 	button("Exit" if screen == "Title" else "Back", back)
+
+func play_level_one() -> void:
+	GameState.mode = "offline"
+	GameState.current_level = 1
+	get_tree().change_scene_to_file(GameState.level_scene_path(1))
 
 func build_creator() -> void:
 	draft = AvatarData.sanitize(GameState.avatar)

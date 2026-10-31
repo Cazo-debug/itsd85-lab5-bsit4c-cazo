@@ -2,6 +2,7 @@ class_name AvatarModel
 extends Node3D
 
 static var materials: Dictionary = {}
+@export var show_puff_preview: bool = true
 var appearance: Dictionary = {}
 
 static func material(color: Color) -> StandardMaterial3D:
@@ -49,7 +50,8 @@ func apply(avatar: Dictionary) -> void:
 	var style: String = AvatarData.FLOAT_STYLES[appearance.float_style]
 	var puff_colors: Array[Color] = [Color("48a832"), Color("723ca8"), Color("f29cce"), Color("ffe76c")]
 	for index: int in range(3):
-		ball(puff_colors[appearance.toot], Vector3(0.16 * (index % 2), 0.10 + index * 0.10, -1.35 - index * 0.28), Vector3.ONE * (0.45 + index * 0.12))
+		if show_puff_preview:
+			ball(puff_colors[appearance.toot], Vector3(0.16 * (index % 2), 0.10 + index * 0.10, -1.35 - index * 0.28), Vector3.ONE * (0.45 + index * 0.12))
 	var ring: TorusMesh = TorusMesh.new()
 	ring.inner_radius = 0.68
 	ring.outer_radius = 1.3
