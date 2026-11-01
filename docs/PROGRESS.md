@@ -261,3 +261,82 @@ assertions remain historical prototype evidence, not v3 acceptance.
 
 Revised Phase 1 and Phase 2 status: PLANNED / NOT EXECUTED. Existing user change
 to project.godot, the supplied MP4 and reference HTML/images remain preserved.
+
+---
+
+# Revised Phase 1 implementation - 2026-11-01
+
+Implemented the four-rider foundation after the user's execution instruction.
+Stopped at revised Gate 1. Shared-ring movement, curved/elevated courses,
+continuous gas, assistant steering and new hazards remain Phase 2 work; the old
+solo course is explicitly labeled as a legacy prototype in the mode screen.
+
+| Area | Implemented now | Still pending |
+|---|---|---|
+| Save schema | Version 2, four independent profiles, profile-0 `avatar` alias, validated four-seat assignments and leader style | Network ownership synchronization |
+| Migration | Original-byte `.pre-v2.bak` before migration write, temporary-file replacement, known progress/settings preserved | User's physical-phone upgrade review |
+| Crew preview | One ring/platform assembly, four spaced anchors, independent rider meshes, 1-4 occupants, all legacy appearance choices | Physical shared-ring simulation |
+| Interface | Play opens Crew Setup; seat/profile/mode selection, assistant assignments, leader selection, selected-profile editor and cancel/save/Back | Gameplay input and LAN |
+
+Files: `GameState.gd`, new `CrewData.gd`, `RiderModel.gd/.tscn`,
+`SharedRingPreview.gd`, `Screen.gd`, `CrewSetup.tscn`, two new GUT suites,
+`tools/verify_crew.gd`, Android export version and project documentation. Kept
+legacy `AvatarModel`, `FloatPlayer`, level contracts, theme, Audio and Net intact.
+
+Implementation choices: initialize three editable spare profiles alongside the
+original profile, leaving their seats empty. UI mode cycles Empty / Assistant /
+Local; assistants are visibly described as pending movement. Runtime peer seats
+are supported by validation but become empty on disk; transient peer IDs and
+unknown extra slot fields are never serialized. The creator previews the edited
+profile's ring style; the crew preview uses its chosen occupied leader. A failed
+creator save restores its prior in-memory profiles and shows an error.
+
+Validation: `tools/run_tests.sh` passes **34 tests / 760 assertions in 9 suites**,
+including all 26 prior tests. New checks cover two migration passes with exact
+backup preservation, independent profile round trips and alias edits, malformed
+field types, missing schema, fifth-seat rejection, duplicate profile/owner
+rejection, peer-ID removal, 1-4 preview occupants, all appearance values,
+selected-profile save/cancel, seat modes, profile selection and leader persistence.
+Review found and fixed missing-key defaults and typed comparisons/membership
+for malformed save data. No test acceptance was weakened.
+
+`tools/verify_crew.gd` passed actual scene transitions and button signals through
+first-use creator, main menu, one/four-rider crew, selected-profile editor,
+save/reload, Android Back and legacy mode entry. Its 720 x 1280 layout assertions
+pass (top 80 px safe region and 120 px touch targets; scrolled content is allowed
+outside its clipping area). Inspected fresh screenshots:
+`docs/screenshots/phase1_crew_one.png`, `phase1_crew_four.png`,
+`phase1_crew_creator.png` and `phase1_crew_modes.png`.
+
+Rendered desktop samples: four-rider crew 112 draw calls / 16,858 primitives;
+four-rider creator with gas-color preview 125 draw calls / 16,522 primitives.
+These are captured-frame counters on Intel UHD Graphics, not worst-case device
+FPS measurements or proof of mid-range/low-end phone targets.
+
+Legacy regression: `tools/verify_level_one.gd` passed 1,872 checks, completed in
+16.73 seconds, collected eight beans and earned three stars. Test/verifier writes
+use disposable paths; no real player save was modified. New screenshots retain
+the prior sky/hole evidence under their original filenames.
+
+Android build: `export/TootTubes-phase1-crew-debug.apk`, version
+`0.3-crew-foundation` / code 5, **57,782,466 bytes**. Signature verification passed
+with v2/v3. Package remains `com.itsd85.toottubes.prototype`, minimum API 24.
+Archive checks confirm the new crew/rider resources and exclusion of references,
+video, tests, tools, docs and credentials. No physical phone was available for
+touch, upgrade or performance acceptance.
+
+Known limits: existing pause/audio/settings placeholders remain; all runtime
+co-op, physics and terrain changes belong to later gates. No rival gameplay was
+added. User changes to `project.godot`, the reference video and untracked pack
+HTML/images remain outside the phase commit.
+
+## Revised Gate 1
+
+- [x] Automated migration, crew, avatar and scene checks pass.
+- [ ] User F5 review: create/edit/save profiles, switch seats, preview four occupants.
+- [ ] User restart review: original avatar/progress and edited profiles persist; Back works.
+- [ ] Actual phone: portrait readability, scrolling, touch targets and Back behavior.
+- [x] Documentation and evidence updated; commit `Phase 1: four-rider shared-ring foundation`.
+
+Manual steps and run commands: [PHASE1_CREW_TESTING.md](PHASE1_CREW_TESTING.md).
+Revised Phase 2 has not begun.

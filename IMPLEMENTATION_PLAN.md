@@ -2,7 +2,7 @@
 
 Revised 2026-11-01. Target: Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer.
 
-**Status: planning revision only.** The existing solo-float prototype and its passing tests are historical implementation evidence. The revised Phase 1 and Phase 2 gates below are NOT complete. Editing this plan does not authorize executing it.
+**Status (2026-11-01): revised Phase 1 implemented; manual acceptance pending.** Migration, four profiles, crew preview and navigation checks pass; see `docs/PROGRESS.md` and `docs/PHASE1_CREW_TESTING.md`. Revised Phase 2 remains planned and unimplemented. The old playable solo course remains explicitly labeled as a legacy prototype. Editing this plan alone does not authorize execution.
 
 The user has replaced the earlier competitive design with **one shared swim ring carrying up to four cooperating riders**, varied curved/elevated courses, repeated directional thrust and many obstacles. This document is the authoritative implementation plan; [ENVIRONMENT_SPEC.md](ENVIRONMENT_SPEC.md) defines geometry, movement and hazard behavior. User instructions take precedence. The old HTML sample is a visual reference, not a source of mandatory gameplay numbers. Previous plans are preserved under `docs/archive/` as historical material only.
 
@@ -114,11 +114,11 @@ Validate slot bounds, occupancy, finite directions, strength and run state. Inpu
 
 ### Gate 1
 
-- [ ] Automated migration, crew, avatar and scene checks pass.
+- [x] Automated migration, crew, avatar and scene checks pass.
 - [ ] F5: create/edit/save profiles, switch slots, preview four occupants on one ring.
 - [ ] Restart: original avatar/progress and edited profiles persist; Back works.
 - [ ] Mobile layout remains readable; no unsupported multiplayer claim.
-- [ ] Update progress with evidence; commit `Phase 1: four-rider shared-ring foundation`.
+- [x] Update progress with evidence; commit `Phase 1: four-rider shared-ring foundation`.
 
 Stop at this gate. Do not begin Phase 2 without the user's execution instruction.
 

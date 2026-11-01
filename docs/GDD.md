@@ -1,6 +1,13 @@
 # Toot Tubes - Game Design Document
 
-Status: v3 target revised 2026-11-01; implementation migration is pending. The existing app is a solo-float prototype with sky scenery and six functioning holes. Its completed checks do not satisfy the new four-rider phases. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
+Status: revised Phase 1 implemented 2026-11-01; manual phone acceptance pending. The app now has four saved profiles and a shared-ring crew preview. The playable course remains the labeled solo prototype with sky scenery and six holes. Revised Phase 2 is not implemented. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
+
+| Area | Implemented baseline | v3 target still pending |
+|---|---|---|
+| Riders and saves | Four profiles, validated seats/owners, profile-0 avatar alias, version-2 saves and original-file migration backup | Network-owned rider seats |
+| Preview and navigation | One ring/platform with four separate rider anchors; profile editor, local/assistant/empty selection and leader style | Active assistant steering and four local controllers |
+| Course and movement | Legacy solo Level 1 remains runnable | Shared rigid body, held gas, curves, climbs/descents and new obstacles in Phase 2 |
+| Validation | Migration/crew/UI tests, rendered portrait checks, legacy regression | Real-phone review and revised gameplay acceptance |
 
 ## 1. Title and pitch
 
