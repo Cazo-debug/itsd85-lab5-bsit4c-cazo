@@ -1,3 +1,5 @@
+> HISTORICAL IMPLEMENTATION RECORD: this describes the earlier environment-only revision and hole correction. The later root IMPLEMENTATION_PLAN.md / ENVIRONMENT_SPEC.md v3 now define the four-rider target; references below to pending two-seat features do not govern future work.
+
 # Phase 1 and 2 review: sky environment
 
 Approved scope, 2026-11-01: **Sky environment first**. Follow-up correction: the six circular orange areas are holes, with falling and checkpoint respawn now implemented. The supplied

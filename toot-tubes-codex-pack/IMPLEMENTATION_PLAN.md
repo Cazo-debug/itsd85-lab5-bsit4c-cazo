@@ -1,0 +1,203 @@
+> Pack mirror of the root implementation plan. Keep this file synchronized with ../IMPLEMENTATION_PLAN.md. Root plan wins if copies diverge. Reference HTML/images remain visual examples only.
+
+# Toot Tubes: Implementation Plan v3
+
+Revised 2026-11-01. Target: Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer.
+
+**Status: planning revision only.** The existing solo-float prototype and its passing tests are historical implementation evidence. The revised Phase 1 and Phase 2 gates below are NOT complete. Editing this plan does not authorize executing it.
+
+The user has replaced the earlier competitive design with **one shared swim ring carrying up to four cooperating riders**, varied curved/elevated courses, repeated directional thrust and many obstacles. This document is the authoritative implementation plan; [ENVIRONMENT_SPEC.md](ENVIRONMENT_SPEC.md) defines geometry, movement and hazard behavior. User instructions take precedence. The old HTML sample is a visual reference, not a source of mandatory gameplay numbers. Previous plans are preserved under `docs/archive/` as historical material only.
+
+## 0. Product rules
+
+- Exactly one physical swim ring/raft per active run; up to four occupied rider slots on that same ring. No competing ring, opposing team, rival bot or per-player finishing place.
+- The cooperative objective is to get the whole crew through the course and across the finish. Falls reset the shared ring to its checkpoint; the clock continues.
+- Each occupied rider slot supplies independently aimed, repeatable thrust. The ring responds to the combined forces, momentum, gravity, water support and obstacle contacts.
+- Proposed controls for our adaptation: aim with a virtual stick/drag and **hold to fart**, release to stop; a short press gives a short burst. This is a design choice, not a verified button mapping from the reference video. Remove the fixed one-impulse-per-water-tap model as the primary control.
+- Use per-rider continuous gas capacity, drain while thrusting and recovery while resting. Tune these values in Phase 2; the old three charges/1.5-second refill and 7/9-unit impulse are not authoritative for the new mechanics.
+- Riders occupy identifiable positions around one inflatable rim with a central platform. Preserve individual names, outfits, hats and gas colors. All riders share the ring's physical motion; their meshes do not simulate independent vehicles.
+- Routes must combine rounded bends, S-curves, hairpins, narrow ledges, wide pools, ascents, descents and dips. A sequence of sideways-offset straight boxes does not satisfy the requirement.
+- Original course layouts, artwork, riders and audio. Preserve the colorful sky-waterpark feeling without copying commercial characters, branding or exact levels.
+- Keep the existing five-level offline progression/save requirements. For compatibility, timed challenges and stars may retain the existing timer-based formula; times must be retuned after the new movement works. Timers are a cooperative challenge, never a race against another ring. A no-time-limit practice fixture is required for physics tuning.
+- Full up-to-four-human LAN co-op is required in Phase 4, not an optional 2-versus-2 extension. Phase 2 proves four independent rider controllers locally; it must not claim four-phone acceptance.
+
+### Course exploration and campaign direction
+
+These are original design targets, not five levels to implement in Phase 2.
+
+| Course | Environment and route | Obstacle combinations |
+|---|---|---|
+| 1: Sky Garden | Wide starting pool, broad S-bends, a narrowing bridge, gentle uphill and downhill, recovery pool | Current, bumper, slow sweeper, one readable swinging mallet, holes |
+| 2: Canyon Switchbacks | Coral cliffs, hairpins, alternating narrow/wide passages, descending curves | Paired mallets, sliding gates, boulders, exposed ledges |
+| 3: Cloud Bridges | Suspended winding bridges, staggered elevation, steep but controllable crests and dips | Moving spiked crossbars, crushers, falling gaps, safe waiting bays |
+| 4: Spiral Springs | Curved climbing route, downhill spiral, broad whirlpool pools, branch reconnects | Cross-currents, whirlpools, rotating sweepers, timed gates |
+| 5: Festival Summit | Mixed climbs, sharp curves, fast descents and narrow finish approach | Combined hazards with fair openings and recovery areas |
+
+Increase difficulty through route geometry, timing and combinations, not only shorter timers. Distinguish decorative floating islands, solid bumpers and dangerous holes visually.
+
+## 1. Constraints and retained foundation
+
+- Godot standard build, typed GDScript with tabs, Compatibility renderer; no new engine, C#, GDExtension or heavy simulation dependency.
+- Preserve Fredoka, theme, navigation, safe-area rules, avatar data, progress/unlocks, user settings, GUT and both test runners. Never overwrite the real save during tests.
+- Mesh art stays procedural. Primitive meshes for riders/scenery; generated ribbon meshes and simplified matching collision for curved courses. Shared materials, MultiMesh repeats, CPU particles, no real-time shadows.
+- Targets: 60 FPS on a mid-range phone, at least 30 FPS on a low-end phone, under 150 visible draw calls and 60k visible triangles, debug APK under 60 MB. Measure the four-rider/worst-obstacle case. Desktop/headless results do not establish phone performance.
+- Every moving gameplay obstacle samples `Level.race_time`; deterministic motion parameters. Cosmetic cloud drift may use a separate visual clock.
+- Keep secrets, keystores, `.bin/`, `.godot/`, exported APKs and device credentials out of Git. Credit assets.
+- The lab PDF is still unavailable. Preserve the existing R1-R10 mapping as provisional; do not claim that a competitive winner requirement has been verified against the original rubric.
+
+## 2. Contracts and migration boundary
+
+### Retained and new files
+
+Retain `GameState`, `Audio`, `Net`, `Level.race_time`, `LevelDefs.LEVELS`, save APIs and existing UI routes. Add `SwimRing.gd/.tscn`, `RiderModel.gd/.tscn`, `CrewInput.gd`, `CrewBrain.gd`, `CoursePath.gd`, `RingPhysicsProfile.gd`, `CourseHazard.gd`, and appropriate `scripts/obstacles/` scenes/scripts. `LevelBuilder`, camera, HUD, course data and water shader migrate to the new path/surface contract.
+
+`FloatPlayer.toot_toward`, legacy `AvatarModel` and old course data remain available to existing fixtures until the replacement passes equivalent checks. The playable scene must switch to exactly one `SwimRing` at the Phase 2 cutover; do not run both architectures together. Retire legacy code only after references and replacement coverage have been checked.
+
+### Crew and save data
+
+- `GameState.save_version`: new schema version; load old saves without losing unlocks, best times/stars, settings or avatar. Back up the original before the first migration write; migration is idempotent.
+- `GameState.local_profiles`: up to four sanitized avatar dictionaries. Existing `avatar` becomes profile 0 and remains a compatibility alias during migration.
+- `GameState.crew_slots`: four entries describing `empty`, `local`, `assist` or `peer`, a profile reference and runtime owner. Never persist transient network peer IDs.
+- Ring appearance is shared. Preserve legacy per-avatar `float_style` data; use the selected leader's style as the initial shared style instead of discarding saved choices.
+- `last_result` represents cooperative success/failure, level, elapsed time, stars and recoveries. No first/second-place result; keep a deprecated legacy field only if required to read old data.
+- Offline prototype defaults to one local rider with configurable cooperative assistants. Assistants occupy seats in the same ring, use the same gas/thrust rules and never become opponents. Human co-op capacity is up to four; four-person same-phone controls are not a requirement.
+
+### Shared-ring API (target, not existing code)
+
+```gdscript
+const MAX_RIDERS: int = 4
+var gas: Array[float]                 # one capacity value per slot
+var seat_control: Array[String]       # empty, local, assist, peer
+var simulate: bool                   # host/offline simulates; guests interpolate
+func set_rider_avatar(seat: int, avatar: Dictionary) -> void
+func set_thrust_input(seat: int, direction_world: Vector3, strength: float, held: bool) -> void
+func release_all_inputs() -> void
+func add_gas_all(amount: float) -> void
+func enter_fall() -> void
+func respawn_at_checkpoint() -> void
+```
+
+Validate slot bounds, occupancy, finite directions, strength and run state. Input sets desired state; force and gas drain run at the fixed physics step. Per-seat effects emit from the rider in the opposite direction to its push. All four seats may act in the same tick.
+
+### Course and hazard contract
+
+- `CoursePath` owns a 3D curve with position/tangents plus width and banked-surface samples. Route distance `s` is baked arc length, never `-position.z`.
+- `sample(s)` yields position, tangent, lateral vector, surface normal and width. `project(point, previous_s)` searches the correct local route section to avoid jumps at nearby bends/overpasses. `surface_at(point, previous_s)` returns valid support, height, normal and local flow, excluding holes and outside edges.
+- Place obstacles, beans, checkpoints, holes and finish by route distance plus lateral offset. Use the same sampled geometry for visible water, hazard placement and physics boundaries.
+- Hazards declare `type`, `s`, `lateral`, parameters and an explicit response: `push`, `tip`, `fall` or `reset`. A spike-shaped mesh alone does not define its response.
+- Ordered checkpoint/finish crossings prevent shortcuts, wrong-way completion and progress jumps across a hairpin. A checkpoint stores a full safe transform, route distance and local surface orientation.
+
+## Phase 1: Four-rider foundation, avatar preview and safe migration
+
+**Goal:** adapt the existing foundation to one ring with up to four occupants while preserving saves and working navigation. This phase does not implement the new moving-ring physics or LAN networking.
+
+### Files expected to change
+
+`autoload/GameState.gd`, `scripts/AvatarData.gd`, shared UI/creator scripts and scenes, new `RiderModel` and shared-ring preview, tests for save migration/crew/avatar/UI, `docs/GDD.md`, `docs/PROGRESS.md` and credits if assets change. Touch project settings/theme only where needed. Keep `Audio` and `Net` compatible.
+
+### Tasks
+
+1. Audit current Git state, saves, scenes and tests before editing. Retain the portrait viewport, 60 Hz physics, touch/mouse emulation, Android Back and existing setup/test tools. Do not reinstall working dependencies.
+2. Add four-slot crew and local-profile data with schema migration, validation and safe defaults. Empty slots apply no force and render no rider. Assign each occupied slot exactly once.
+3. Separate the rider mesh from the inflatable ring. Build one original ring with a central platform and four clear rim anchors. Preview 1, 2, 3 and 4 occupants; avatars must remain recognizable without overlap.
+4. Extend the avatar creator to edit a selected local profile. Keep name length, all existing appearance options, Randomize, Save and Back. Preview the edited rider on the shared ring and label the selected slot. Preserve saved individual float-style choices as migration data.
+5. Add a small crew setup/preview screen reachable from Play, with occupied/empty slot labels, profile selection and assistant toggles for offline development. The Phase 1 screen must clearly label shared-ring play as pending until Phase 2; keep the existing prototype accessible as such during migration.
+6. Keep Title -> Avatar Creator on first use -> Main Menu -> crew/mode entry navigation. Every screen has usable Back behavior. Do not advertise rival racing, 2-versus-2 or separate player floats.
+7. Keep touch targets at least 120 px, body text at least 28 px and the top 80 px safe area at 720 x 1280. Show four names/statuses without cramming four full control panels onto a phone.
+8. Update the GDD and progress record with separate columns for implemented baseline versus v3 target. Existing 26-test results must not be relabeled as proof of this phase.
+
+### Automated acceptance
+
+- Old saves migrate twice without losing data or duplicating profiles; missing/corrupt/new fields are sanitized; use disposable save files and retain existing progression/star boundary coverage.
+- Four profiles round-trip independently. Reject a fifth slot, duplicate ownership and invalid profile references. `avatar` and profile 0 remain consistent during compatibility.
+- Preview 1/2/3/4 riders and all appearance options without overlapping anchors, invalid nodes or leaked resources. Exactly one ring mesh assembly.
+- Creator edits affect only the selected profile; cancel/back does not overwrite another profile. First-launch and navigation smoke tests remain passing.
+- Run `tools/run_tests.sh`; keep existing coverage and explain any intentional API migration rather than deleting tests to obtain a pass.
+
+### Gate 1
+
+- [ ] Automated migration, crew, avatar and scene checks pass.
+- [ ] F5: create/edit/save profiles, switch slots, preview four occupants on one ring.
+- [ ] Restart: original avatar/progress and edited profiles persist; Back works.
+- [ ] Mobile layout remains readable; no unsupported multiplayer claim.
+- [ ] Update progress with evidence; commit `Phase 1: four-rider shared-ring foundation`.
+
+Stop at this gate. Do not begin Phase 2 without the user's execution instruction.
+
+## Phase 2: Shared-ring physics, curved sky course and obstacle prototype
+
+**Goal:** a playable original Level 1 demonstrating sustained cooperative thrust, physical tilting, real curves, narrow passages, uphill/downhill travel and several interacting obstacle types. Ship one course plus a small physics/geometry practice fixture, not the full campaign or network stack.
+
+### Files expected to change
+
+New `SwimRing`, `CrewInput`, `CrewBrain`, `CoursePath`, `RingPhysicsProfile`, `CourseHazard`, obstacle scripts/scenes and practice fixture; migrate `Level`, `LevelBuilder`, `LevelDefs`, camera, HUD, water/hole support, checkpoint/finish and pickup integration. Extend meaningful physics/input/course/solvability tests and verification tools; update testing guide, screenshots, export version and progress.
+
+### Implementation order
+
+1. **Geometry fixture first:** a safe basin, broad curve, S-bend, hairpin, narrow strip, climb, descent and dip. Build water and banks from the sampled 3D path; weld seams and matching collisions. Inspect from overview and play cameras. This fixture demonstrates all route shapes even if the first tutorial uses gentler variants.
+2. **One physical ring:** one `RigidBody3D` with a stable compound/convex collision shape and four rider anchors. Enable vertical movement, yaw, pitch and roll. Replace the globally locked water plane with gravity plus bounded, damped water support at several points. Support must disappear outside the channel and over holes. No teleporting or visual-only tilt to fake slope traversal.
+3. **Repeatable rider thrust:** implement held input with per-step force and continuous per-seat gas consumption. Short tap, long hold and repeated presses must produce distinct, measurable durations of thrust. Release stops thrust immediately; momentum continues. Apply forces at appropriate rider attachment points, allowing steering/torque rather than forcing every push through the center.
+4. **Direction and strength:** camera-relative aiming converted into world/surface directions; normalize/clamp valid input. Riders can aim beyond a purely radial-to-center vector so turning is physically possible. Transform anchors with the ring's orientation. Sum all seats in the same fixed step; tune 1/2/3/4-occupant behavior without multiplying maximum speed unfairly.
+5. **Input lifecycle:** drag-to-aim plus hold-to-thrust on mobile; mouse/keyboard equivalents on desktop. Track finger IDs and handle touch release, drag outside the control, app focus loss, Back, pause, countdown, fall and finish. These must clear held state; UI interaction never starts or leaves thrust running.
+6. **Four-controller proof:** desktop test bindings and a deterministic scripted driver can control all four seats independently and simultaneously. Offline assistants are configurable, use the same gas/force rules and release inputs when disabled. A one-human setup must remain steerable without silently spawning another ring. No LAN implementation in this phase.
+7. **Movement tuning:** retain drift and sideways motion, natural yaw, visible roll/pitch and recovery after moderate impacts. Use configurable damping, maximum speed/spin and support strength in one profile. Tune crest departure and landing, gravity on slopes and recovery from a tipped ring. Do not flatten the route to make tests pass.
+8. **Playable Level 1:** wide starting pool -> broad S-bend -> bumper/current section -> narrow curved bridge -> gentle uphill -> sweeper crossing -> downhill/dip -> swinging-mallet section with a waiting bay -> recovery pool with clearly marked holes -> shared finish. At least two safe checkpoints and an alternate safe line around each mandatory hazard. Distinct elevations and headings must be visible from the play camera.
+9. **Minimum hazards now:** working bumper, rotating sweeper, swinging mallet, directional current and holes. Also include a timed spiked crossbar in the practice fixture to test tip/push response. Drive motion from `Level.race_time`. Keep decorative spikes separate from declared lethal reset zones; ordinary contacts can push/tip without automatically ending the run.
+10. **Fall and recovery:** the entire ring and crew drop together after losing support over a hole/edge. Clear every held input and hide water-only effects while unsupported. Restore a safe checkpoint transform with zero velocity and fresh input required; avoid a reset loop. Disable timed recovery after the run has already ended. A prolonged overturned/out-of-bounds state has a recovery route.
+11. **Presentation:** use the retained bright palette, cliff depth, cloud batches and scenery, adapted to each path's height. A route-aware camera looks ahead around bends and changes height smoothly; it must not spin with every raft rotation or clip through a hammer/cliff. Two-second overview then countdown. Ripples sit on the local surface, jets stay attached to active riders, and gas/effects reflect actual held input.
+12. **HUD and flow:** one crew progress indicator, up to four compact name/gas/active-seat indicators, cooperative goal, timer and Back. Explain aim/hold/release and shared recovery. Keep existing star/progress saving behind cooperative completion; no finishing-place UI. Tune the Level 1 time budget from playtests, not an assumed video speed.
+13. **Cutover:** switch Play Level 1 to one `SwimRing`. Preserve existing saves and completed legacy evidence; retire old tap/float assumptions only after replacement tests cover the corresponding behaviors. Rebuild a clearly versioned debug APK and keep old exports separate.
+
+### Automated acceptance
+
+- **Thrust:** only the selected seat drains; all four can act in one tick; invalid/empty slots, non-finite vectors and disabled states are rejected. Release stops force, not momentum. Gas cannot become negative or create endless depleted sputtering. Equal simulated hold durations give comparable results at different render rates.
+- **Torque/physics:** an off-centre non-radial push changes yaw; a symmetric forward pair reduces net yaw while accelerating. Real collision contacts produce tilt/push. The ring climbs, descends and crosses a crest with meaningful vertical motion; physics constraints do not lock these axes.
+- **Input:** press/drag/release, simultaneous touch IDs, UI touches, focus loss and race-state transitions. No duplicate mouse/touch emission or stuck held thrust.
+- **Geometry:** continuous path tangents and collision seams; nonzero curvature/height change; narrow sections still pass a ring with clearance. Correct local surface support and hole cut-outs on slopes. Progress stays on the correct branch at hairpins and nearby elevated sections.
+- **Hazards:** deterministic transforms at the same shared time; mallet/sweeper contact response; current force in local flow direction; crossbar response matches its declared behavior; holes remove support. Checkpoint transform is outside every hazard's swept volume.
+- **Recovery and finish:** all seats reset together; no gas drain/input during fall/countdown; no resume after timeout; ordered checkpoint/finish crossing; no shortcut completion across a nearby bend; save only one cooperative result.
+- **Solvability:** fixed-step cooperative driver completes the real curved Level 1 in time for configured 1/2/3/4 occupied slots. It uses normal thrust/gas and contacts, never direct transform movement. Run several recorded deterministic seeds; log falls and contacts. Also exercise cooperative assistants. A scripted finish is not human feel acceptance.
+- **Regression:** retain save/progression/avatar/navigation/bean coverage, adapting semantic assertions where contracts intentionally changed. Run `tools/run_tests.sh`, a complete rendered run, and the hole/edge/recovery verification against the new geometry.
+
+### Gate 2
+
+- [ ] All new and migrated tests pass; exactly one physical ring in the playable scene.
+- [ ] Four occupants can contribute independently; short bursts, long holds and simultaneous pushes are visibly distinct.
+- [ ] Geometry fixture proves curves, S-bends, hairpins, narrow route, uphill, downhill and dip.
+- [ ] Level 1 combines actual curved/elevated terrain with bumper, current, sweeper, mallet and holes; crossbar works in the fixture.
+- [ ] Collisions can tilt and displace the ring; the crew can recover; falls reset everyone safely.
+- [ ] Camera stays readable through curves, slopes and impacts; mobile controls release reliably.
+- [ ] Complete a human-played run; record desktop frame times and worst four-rider scene draw/triangle counts.
+- [ ] Install debug APK on a real phone; check sustained touch, portrait, frame pacing and heat. Do not substitute desktop measurements for this gate.
+- [ ] Update progress/screenshots/testing guide; commit `Phase 2: four-rider ring, curved terrain and cooperative obstacles`.
+
+Stop here. Full campaign and real-phone network co-op remain separate phases.
+
+## Later-phase compatibility requirements (not execution scope)
+
+These replace the old competitive tasks so future phases cannot restore the discarded racing design. Detailed implementation of these phases waits for the revised Phase 2 gate.
+
+### Phase 3: Five cooperative courses and complete offline flow
+
+Expand the five environment directions above with crushers, moving gates, boulders, whirlpools, spiked barriers and combined timing puzzles. Keep fair openings and safe respawns. Add Level Select/locks, cooperative Result/Retry/Next/Menu, Pause/Restart/Sound/Quit and contextual tutorials. Preserve offline saves, best times/stars, settings and airplane-mode play. Cooperative seat assistants replace opponent bots. Test all five courses with the same legal-input driver, ordered progression, checkpoint safety, different crew sizes and difficulty variety. No rival finish, rankings or separate opponent ring. Gate: all five courses, lose/retry, save/relaunch, airplane mode and manual phone tests. Commit `Phase 3: five cooperative courses and progression`.
+
+### Phase 4: Two to four phones on one shared ring
+
+First validate host plus one guest, then host plus three guests; four-human co-op is required before Phase 4 is complete. Keep ENet port 7777 with `MAX_CLIENTS = 3`. Host simulates the one ring, hazards and cooperative finish. Guests submit owned-seat aim/thrust state; validate ownership, rate, strength, sequence and gas. Sync full position/orientation, linear/angular velocity, per-seat gas and run state; interpolate guests. Use input expiry plus explicit release so packet loss/disconnect cannot leave thrust stuck on. All seats see the same result; no per-peer winner. The lobby displays one ring with four slots. On guest loss, stop that seat's input and mark it vacant/assist according to the selected policy; host loss returns guests to Mode Select with a clear message. Retain timeout/unreachable-IP handling, rematch/leave, Android network permissions and online progress isolation. Net smoke covers 2 and 4 peers, unauthorized inputs, release loss and disconnects. Real 2-phone and 4-phone tests remain mandatory. Internet backend is optional only after working LAN co-op. Commit `Phase 4: four-player shared-ring LAN co-op`.
+
+### Phase 5: Polish and release
+
+Original sustained fart loops with attack/release, impacts/falls/pickups/UI/music, saved audio/quality settings, reduced camera shake, four-rider title/icon, attribution, device profiling, release signing, README, test matrix and human playtests. Retain tests plus net smoke, offline/online error cases, portrait/back/accessibility, private signing keys and explicit release publication checks. Check performance with all four riders firing amid moving hazards on at least two phone classes. Do not cut the required fourth rider, route variety or cooperative physics to meet an old schedule; reduce decorative cost first. Commit `Phase 5: cooperative polish and release`.
+
+## Lab traceability and validation status
+
+| Existing requirement | Revised owner |
+|---|---|
+| R1 five distinct levels / R2 goal | Phase 3 campaign / Phase 2 cooperative goal |
+| R3 results / R4 locked progression | Phase 3 cooperative results and level select |
+| R5 persistent saves | Phase 1 migration, regression through all phases |
+| R6 offline | Phase 2 local prototype, Phase 3 airplane-mode acceptance |
+| R7 multiplayer / R8 errors | Phase 4 one-ring LAN co-op and error/disconnect tests |
+| R9 APK/touch / R10 menus/audio | Early Phase 2 phone build, Phases 3-5 completion |
+
+Exact rubric alignment awaits the original lab PDF. No unsupported claim that the video shows our gas formula, reset policy, hold controls or timer rules. Budget/schedule must be re-estimated after the Phase 2 movement prototype; previous two-day/three-day estimates are superseded.

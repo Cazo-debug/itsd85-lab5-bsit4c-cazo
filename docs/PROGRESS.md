@@ -220,3 +220,44 @@ to `project.godot` and the untracked reference pack are preserved outside this c
 - [ ] Drift into an opening; confirm a fall instead of a bounce.
 - [ ] Reach a checkpoint, fall again, and confirm the new respawn location.
 - [ ] Install the updated APK and check the same behavior on the phone.
+
+
+---
+
+# Phase 1/2 plan revision v3 - 2026-11-01
+
+User requested edits to Phase 1 and Phase 2 after confirming a new direction:
+one shared ring with up to four cooperating riders, repeated directional thrust,
+curves, narrow passages, uphill/downhill/dips and varied physical obstacles.
+This turn edits documentation only. No gameplay scripts, scenes, export settings,
+APKs or saves were changed; no implementation phase gate is newly completed.
+
+Updated root IMPLEMENTATION_PLAN.md, new root ENVIRONMENT_SPEC.md, both pack
+mirrors, root/pack AGENTS guidance, GDD and README status. Historical plans/spec
+are preserved under docs/archive/ with explicit non-executable status. The old
+sky revision record is marked historical. Later-phase carry-forward requirements
+now use cooperative campaign results and two-to-four-phone ownership of one ring;
+no competitor ring, opponent bot or 2-versus-2 extension remains an active task.
+
+Phase 1 now specifies safe legacy-save migration, four independent profiles/slots,
+separate rider and shared-ring models, crew preview and compatibility/navigation
+checks. Phase 2 specifies continuous aim/hold/release, per-seat gas and forces,
+unlocked rotation/vertical motion, real 3D path geometry, route-based progress,
+local surface support, camera adaptation and shared checkpoint recovery. It must
+prove all four local controllers before Phase 4 proves four real phones.
+
+Mandatory Phase 2 geometry fixture: broad curve, S-bend, hairpin, narrowing,
+climb, descent and dip. Playable tutorial: bumper, current, sweeper, swinging
+mallet and holes; timed spiked crossbar additionally tested in the fixture.
+Phase 3 expands the original course environments and the remaining obstacle
+library. Held input/gas tuning are proposed adaptation rules, not claimed as
+exact mechanics measured from the reference video.
+
+Validation for this documentation change: checked canonical/pack mirror equality,
+required phase/gate sections, Markdown file links, historical archive retention,
+absence of active legacy racing requirements and Git whitespace. No application
+tests rerun because no executable files changed; the previous 26 tests/523
+assertions remain historical prototype evidence, not v3 acceptance.
+
+Revised Phase 1 and Phase 2 status: PLANNED / NOT EXECUTED. Existing user change
+to project.godot, the supplied MP4 and reference HTML/images remain preserved.

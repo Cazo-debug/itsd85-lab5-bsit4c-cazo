@@ -1,5 +1,7 @@
 # Toot Tubes
 
+**Planning update (2026-11-01):** [Phase 1 and Phase 2 have been revised](IMPLEMENTATION_PLAN.md) for one shared ring with up to four riders, held directional thrust, curved/elevated terrain and cooperative hazards. Those v3 phases are pending implementation; the run instructions below still describe the existing solo prototype. [Environment and movement specification](ENVIRONMENT_SPEC.md).
+
 Godot 4.7.2 **standard** build, Compatibility renderer. Phases 1 and 2: persistent saves, avatar creator, navigation and a playable solo Level 1. The sky environment revision adds suspended cliffs, clouds, floating islands, balloons and a camera intro. Campaign expansion and networking are later phases.
 
 ## Open
