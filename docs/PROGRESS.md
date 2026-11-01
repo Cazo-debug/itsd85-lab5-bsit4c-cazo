@@ -340,3 +340,42 @@ HTML/images remain outside the phase commit.
 
 Manual steps and run commands: [PHASE1_CREW_TESTING.md](PHASE1_CREW_TESTING.md).
 Revised Phase 2 has not begun.
+
+---
+
+# Phase 2 delivery-plan revision - 2026-11-01
+
+The user asked why the environment was unchanged after Phase 1 and then asked
+to revise Phase 2. This change updates documentation only. No gameplay code,
+scenes, saves, APKs or phase-completion claims were changed.
+
+Revised the canonical plan and its pack mirror around a visible replacement of
+the playable environment. Phase 2 now explicitly starts from the completed
+four-profile foundation and delivers seven connected Sky Garden sections:
+launch pool, S-bends, narrow curved bridge, uphill/crest, hairpin/descent/dip,
+obstacle garden and shared finish. The main course must contain the route
+variety; a geometry fixture or updated preview alone cannot satisfy acceptance.
+The hairpin must turn at least 150 degrees and the climb must gain at least one
+physical ring diameter, with clearances/slopes kept within the existing spec.
+
+Promoted the timed spiked crossbar from fixture-only to playable Level 1 alongside
+bumper, current, sweeper, mallet and holes. Minimum counts are two bumpers, two
+holes and one of each other type, with fair openings and two safe checkpoints.
+Holes are actual unsupported openings and whole-crew falls, never orange caps
+or blocking walls. Recoverable push/tip contacts remain distinct from falls.
+
+Added explicit menu cutover: Play -> Crew Setup -> Start Sky Garden, plus an
+accessible untimed Practice route, saved-crew integration, empty-crew feedback
+and local-seat selection. Internal milestones do not create new approval gates;
+future authorized execution must continue through playable integration. Main
+Play may not remain routed to the legacy solo course at completion.
+
+Added before/after portrait captures, uninterrupted gameplay recording, route
+shape assertions against production data, menu-to-game verification and busy
+four-rider performance evidence. Desktop versus phone checks stay separate.
+The existing environment spec and GDD now agree with these requirements.
+
+Validation: canonical/pack mirror equality, Phase 2 boundary/gate checks,
+crossbar scope consistency and Git whitespace checks. No application tests
+rerun: executable files are unchanged. The prior 34 tests / 760 assertions
+remain Phase 1 evidence only. All Phase 2 gates remain unchecked.

@@ -102,7 +102,7 @@ The previous 0.9-second visual drop is a legacy behavior, not the new gravity/su
 | Swinging mallet | Pendulum head crossing the route; wait/steer around it | 2 playable |
 | Current | Force in local route direction or a declared cross-current | 2 playable |
 | Hole / exposed edge | Removes support; whole-crew fall and checkpoint recovery | 2 playable |
-| Spiked crossbar | Timed moving bar; declared push/tip or reset response | 2 fixture, 3 campaign |
+| Spiked crossbar | Timed moving bar with recoverable push/tip contact and a safe waiting window | 2 playable and fixture |
 | Crusher | Timed descending hazard with visible warning and escape space | 3 |
 | Moving gate / spiked panel | Opens a passage on a repeatable cycle | 3 |
 | Boulder / rolling obstacle | Blocks or sweeps a defined portion of the lane | 3 |
@@ -117,5 +117,9 @@ Measure the ring's swept clearance, provide waiting bays at timed narrow passage
 Follow the shared ring position with damped height and route look-ahead. Blend heading toward the forward route/velocity as appropriate; never rotate the view with every raft yaw impulse. Handle low speed, reverse travel, hairpins, slopes, falls and respawns without instant flips. Check camera obstruction near cliffs/large hazards and respect reduced-motion settings.
 
 Overview must reveal the original winding layout and meaningful elevations. Play view must show enough of the next bend/hazard to react. Capture a wide curve, narrow bridge, uphill/downhill, tilted collision and four riders emitting independently. The earlier reference sample's fixed (x,14,z+12) world-axis camera is superseded where it fails on these routes.
+
+Phase 2 visual delivery is the playable Sky Garden route in `IMPLEMENTATION_PLAN.md`, not the static crew preview. Its normal Play route includes an S-bend, at least a 150-degree hairpin, a narrow curved bridge, an uphill gain of at least one physical ring diameter, downhill and dip. The opening overview must show upper and lower sections together, with clouds below the suspended cliff geometry. Keep the upcoming path visible from the play camera; preserve depth through cliff strata, haze and lower scenery rather than covering the view with particles.
+
+Before/after captures and an uninterrupted gameplay recording must demonstrate the change at portrait resolution. Capture repeated jets, real height/heading changes, contact-induced tilt and an actual unsupported fall. Open holes have no orange cap, water surface or support across their center. Body movement evidence must distinguish real rigid-body motion from cosmetic mesh/camera animation.
 
 Acceptance requires both legal-input automated runs and human play. Record frame pacing with four active riders and the busiest hazard grouping on actual phones. Keep geometry collision/progress tests separate from screenshots and keep local four-controller tests separate from four-phone network proof.

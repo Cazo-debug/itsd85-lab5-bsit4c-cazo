@@ -29,6 +29,8 @@ The entire crew completes the course together. Timed challenges retain cooperati
 
 Five planned original courses: Sky Garden, Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit. Mix S-bends, hairpins, narrow passages, broad pools, climbs, descents and dips. Vary scenery, flow and obstacle timing instead of repeating a straight lane with more hazards. Phase 2 builds the first course plus a geometry/physics fixture; Phase 3 completes the campaign, locks and results. Preserve saved unlocks/best times/stars and keep online results isolated from offline progression.
 
+Phase 2's revised delivery requires those core shapes in playable Sky Garden itself: launch pool, garden S-bends, narrow sky bridge, climb/crest, canyon hairpin and descent, obstacle garden and shared finish. Six playable hazard types include the spiked crossbar alongside bumpers, current, sweeper, mallet and holes. Start Sky Garden and untimed Practice must be reachable through the existing crew screen; a changed preview does not count as the new environment.
+
 ## 6. Modes and multiplayer
 
 One ring in every mode. Offline offers a local rider and configurable cooperative seat assistants; the four-slot architecture also supports local development controllers. Phase 4 connects two to four phones to owned seats on the same host-simulated ring via ENet/LAN. Four-human co-op is required, not a separate competitive mode. Guest departure clears its held input; host loss returns guests safely to Mode Select. Networking remains unimplemented today.
