@@ -37,11 +37,11 @@ One ring in every mode. Offline offers a local rider and configurable cooperativ
 
 ## 7. Characters and customization
 
-Four independently identifiable riders sit around a single rim and central platform. Preserve original procedural riders, skin/outfit/hat/toot choices and twelve-character names. Migrate existing avatar data into local profile 0 without deleting saved float styles. Ring appearance is shared. Empty slots have no rider or thrust. The creator previews up to four occupants while editing one selected profile.
+Four independently identifiable riders face outward and move around the shared rim when aiming, with spacing constraints. Their clothed rear panels turn red during actual thrust, then cool. Orbit positions drive the real force lever arms and supported weight shift. Preserve original procedural riders, skin/outfit/hat/toot choices and twelve-character names. Migrate existing avatar data into local profile 0 without deleting saved float styles. Ring appearance is shared. Empty slots have no rider or thrust. The creator previews up to four occupants while editing one selected profile.
 
 ## 8. Visual style and terrain
 
-Colorful sky waterpark with turquoise water, orange/coral cliffs, green rims, clouds, foliage and floating scenery. Generate continuous 3D ribbon courses with matching collision; the water height and forward direction vary along the route. Use shared materials, primitive decorations, MultiMesh repeats and CPU particles. Original layouts/characters/artwork; no commercial asset copying. No real-time shadows.
+Colorful sky waterpark with turquoise water, orange/coral cliffs, green rims, clouds, foliage and floating scenery. Generate continuous 3D ribbon courses with matching collision; the water height and forward direction vary along the route. Use shared materials, primitive decorations, MultiMesh repeats and CPU particles. WaterStyle supplies shared wave parameters for rendering and buoyancy; wakes, foam and spray show interaction without full fluid simulation. Original layouts/characters/artwork; no commercial asset copying. No real-time shadows.
 
 ## 9. Audio
 

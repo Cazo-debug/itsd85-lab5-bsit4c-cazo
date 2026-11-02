@@ -128,6 +128,10 @@ Stop at this gate. Do not begin Phase 2 without the user's execution instruction
 
 **Goal:** pressing Play must lead to a visibly new, playable 3D sky waterpark with one shared ring carrying the selected 1-4 riders. The course must visibly wind, narrow, climb and descend, with repeated directional fart thrust and physical obstacles. Ship one complete original course plus an accessible practice route. A crew preview, background recolor, isolated geometry demo or unchanged legacy Level 1 does not complete this phase.
 
+### Authorized Phase 2 feedback revision - 2026-11-02
+
+Aim also moves each rider around the rim while faces remain outward. Preserve stable seat IDs, prevent overlap, apply forces at the moving anchors and show red clothed-rear feedback during actual thrust. Keep hull batching separate from moving rider parts. Improve the shared water with lit shading, small physical waves, shore/hole foam, wakes and spray; shader displacement and buoyancy use the same `WaterStyle` and paused run clock. Reuse the same profiles/systems for later environments. Validate crew-size solvability and performance again, rebuild a versioned APK, and leave human/phone gates pending until actually reviewed.
+
 ### Starting point and delivery boundary
 
 - Reuse completed Phase 1 (`0961604`): `CrewData`, four saved profiles, validated seats, `RiderModel`, leader style, save-version-2 migration and crew navigation. Do not rebuild those systems or discard existing saves.

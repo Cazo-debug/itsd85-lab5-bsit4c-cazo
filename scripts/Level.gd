@@ -72,6 +72,7 @@ func _physics_process(delta: float) -> void:
 				begin_run()
 		State.RACING:
 			race_time += delta
+			course.update_water(race_time, player)
 			time_left = maxf(0, time_limit - race_time)
 			for hazard: CourseHazard in course.hazards:
 				hazard.update_time(race_time)

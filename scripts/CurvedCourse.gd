@@ -15,6 +15,10 @@ func triangle(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, uv_a: Vecto
 	for item: Array in [[a, uv_a], [b, uv_b], [c, uv_c]]:
 		tool.set_normal(normal)
 		tool.set_uv(item[1])
+		if tool == builders["Water"]:
+			var frame: Dictionary = path.sample(item[1].x)
+			tool.set_color(Color(frame.tangent.x * 0.5 + 0.5, frame.tangent.y * 0.5 + 0.5, frame.tangent.z * 0.5 + 0.5))
+			tool.set_uv2(Vector2(absf(item[1].y) / (frame.width * 0.5), frame.width * 0.5))
 		tool.add_vertex(item[0])
 
 func quad(key: String, a: Vector3, b: Vector3, c: Vector3, d: Vector3, uv: Array) -> void:
@@ -37,7 +41,10 @@ func build(definition: Dictionary) -> void:
 	for index: int in range(path.frames.size() - 1):
 		var a: Dictionary = path.frames[index]
 		var b: Dictionary = path.frames[index + 1]
-		quad("Water", a.position - a.lateral * a.width / 2, a.position + a.lateral * a.width / 2, b.position + b.lateral * b.width / 2, b.position - b.lateral * b.width / 2, [Vector2(a.s, -a.width / 2), Vector2(a.s, a.width / 2), Vector2(b.s, b.width / 2), Vector2(b.s, -b.width / 2)])
+		for strip: int in range(6):
+			var left: float = strip / 6.0 - 0.5
+			var right: float = (strip + 1) / 6.0 - 0.5
+			quad("Water", a.position + a.lateral * a.width * left, a.position + a.lateral * a.width * right, b.position + b.lateral * b.width * right, b.position + b.lateral * b.width * left, [Vector2(a.s, a.width * left), Vector2(a.s, a.width * right), Vector2(b.s, b.width * right), Vector2(b.s, b.width * left)])
 		for side: float in [-1.0, 1.0]:
 			var edge_a: Vector3 = a.position + a.lateral * (a.width / 2) * side
 			var edge_b: Vector3 = b.position + b.lateral * (b.width / 2) * side
@@ -78,6 +85,7 @@ func build(definition: Dictionary) -> void:
 		mesh(rim_mesh, Color("eafbff"), Transform3D(Basis(frame.lateral, frame.normal, -frame.tangent), center + frame.normal * 0.03))
 	var water_material: ShaderMaterial = ShaderMaterial.new()
 	water_material.shader = preload("res://shaders/route_water.gdshader")
+	path.water_style.apply_to(water_material)
 	var holes: PackedVector3Array = PackedVector3Array()
 	for hole: Dictionary in path.holes:
 		holes.append(Vector3(hole.s, hole.lateral, hole.radius))
@@ -117,6 +125,16 @@ func build(definition: Dictionary) -> void:
 		var instance: MeshInstance3D = mesh(sphere, Color("ffcf50"), Transform3D(Basis.IDENTITY, at))
 		pickups.append({"s": fraction * path.length, "node": instance, "ready_at": 0.0})
 	build_decor()
+
+func update_water(time: float, ring: SwimRing) -> void:
+	path.water_time = time
+	var material: ShaderMaterial = water.material_override
+	material.set_shader_parameter("water_time", time)
+	var frame: Dictionary = path.project(ring.position, ring.route_s)
+	material.set_shader_parameter("ring_uv", Vector2(frame.s, frame.offset))
+	var velocity: Vector2 = Vector2(ring.linear_velocity.dot(frame.tangent), ring.linear_velocity.dot(frame.lateral))
+	material.set_shader_parameter("wake_velocity", velocity if not ring.falling else Vector2.ZERO)
+	material.set_shader_parameter("ring_supported", not ring.falling and path.surface_at(ring.position, ring.route_s).valid and absf(ring.position.y - frame.position.y) < 1.5)
 
 func mesh(geometry: PrimitiveMesh, color: Color, at: Transform3D) -> MeshInstance3D:
 	var instance: MeshInstance3D = MeshInstance3D.new()

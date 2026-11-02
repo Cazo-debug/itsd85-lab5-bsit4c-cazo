@@ -37,6 +37,12 @@ var leader: int = 0
 var force_seconds: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var peak_tilt: float = 0.0
 var feedback_active: Array[bool] = [false, false, false, false]
+var orbit: RiderOrbit = RiderOrbit.new()
+var aiming: Array[bool] = [false, false, false, false]
+var orbit_motion: Array[float] = [0.0, 0.0, 0.0, 0.0]
+var spray: CPUParticles3D
+var quiet_firing: Array[bool] = [false, false, false, false]
+var quiet_motion: Array[float] = [0.0, 0.0, 0.0, 0.0]
 
 func setup(course_path: CoursePath, profiles: Array[Dictionary], crew: Array[Dictionary], leader_profile: int) -> void:
 	path = course_path
@@ -57,7 +63,7 @@ func _ready() -> void:
 		setup(fallback, profiles, CrewData.default_slots(), 0)
 	mass = profile.mass
 	linear_damp = 0.04
-	angular_damp = 2.8
+	angular_damp = profile.angular_drag
 	continuous_cd = true
 	can_sleep = false
 	collision_layer = 1
@@ -78,7 +84,7 @@ func _ready() -> void:
 	visual = SharedRingPreview.new()
 	add_child(visual)
 	visual.configure(avatars, slots, leader)
-	MeshBatch.bake(visual)
+	visual.bake_moving_parts()
 	for index: int in range(MAX_RIDERS):
 		var jet: CPUParticles3D = CPUParticles3D.new()
 		jet.emitting = false
@@ -117,6 +123,25 @@ func _ready() -> void:
 	ripple.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ripple)
 	ripple.top_level = true
+	spray = CPUParticles3D.new()
+	spray.amount = 24
+	spray.lifetime = 0.50
+	spray.emitting = false
+	spray.local_coords = false
+	spray.gravity = Vector3(0, -8, 0)
+	spray.spread = 65
+	spray.initial_velocity_min = 1.0
+	spray.initial_velocity_max = 2.5
+	spray.scale_amount_min = 0.04
+	spray.scale_amount_max = 0.12
+	var drop: SphereMesh = SphereMesh.new()
+	drop.radial_segments = 6
+	drop.rings = 3
+	drop.material = AvatarModel.material(Color("c8faff"))
+	spray.mesh = drop
+	spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(spray)
+	spray.top_level = true
 	body_entered.connect(_on_contact)
 
 func set_rider_avatar(seat: int, avatar: Dictionary) -> void:
@@ -124,11 +149,20 @@ func set_rider_avatar(seat: int, avatar: Dictionary) -> void:
 		return
 	avatars[slots[seat].profile] = AvatarData.sanitize(avatar)
 	visual.configure(avatars, slots, leader)
-	MeshBatch.bake(visual)
+	visual.bake_moving_parts()
 	for index: int in range(jets.size()):
 		if seat_control[index] != "empty":
 			var color: Color = RaceEffects.PUFF_COLORS[avatars[slots[index].profile].toot]
 			jets[index].color_ramp.colors = PackedColorArray([color, Color(color, 0.0)])
+
+func set_aim_input(seat: int, direction_world: Vector3) -> bool:
+	if seat < 0 or seat >= MAX_RIDERS or seat_control[seat] == "empty" or not simulate or falling:
+		return false
+	if not direction_world.is_finite() or direction_world.length_squared() < 0.001:
+		return false
+	aim[seat] = direction_world.normalized()
+	aiming[seat] = true
+	return true
 
 func set_thrust_input(seat: int, direction_world: Vector3, requested_strength: float, requested_held: bool) -> bool:
 	if seat < 0 or seat >= MAX_RIDERS or seat_control[seat] == "empty":
@@ -136,12 +170,14 @@ func set_thrust_input(seat: int, direction_world: Vector3, requested_strength: f
 	if not requested_held:
 		held[seat] = false
 		strength[seat] = 0
+		if direction_world.is_finite() and direction_world.length_squared() > 0.001:
+			set_aim_input(seat, direction_world)
 		return true
 	if not simulate or falling or not direction_world.is_finite() or not is_finite(requested_strength):
 		return false
 	if direction_world.length_squared() < 0.001:
 		return false
-	aim[seat] = direction_world.normalized()
+	set_aim_input(seat, direction_world)
 	strength[seat] = clampf(requested_strength, 0, 1)
 	held[seat] = true
 	return true
@@ -149,6 +185,7 @@ func set_thrust_input(seat: int, direction_world: Vector3, requested_strength: f
 func release_all_inputs() -> void:
 	for index: int in range(MAX_RIDERS):
 		held[index] = false
+		aiming[index] = false
 		strength[index] = 0
 		firing[index] = false
 		if feedback_active[index]:
@@ -156,6 +193,8 @@ func release_all_inputs() -> void:
 			thrust_stopped.emit(index)
 	for jet: CPUParticles3D in jets:
 		jet.emitting = false
+	if is_instance_valid(spray):
+		spray.emitting = false
 
 func add_gas_all(amount: float) -> void:
 	if not is_finite(amount) or amount <= 0:
@@ -174,6 +213,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if falling:
 		fall_time += delta
 		return
+	var previous_angles: Array[float] = orbit.angles.duplicate()
+	orbit.advance(aim, aiming, seat_control, state.transform.basis, profile.rider_orbit_speed, delta)
+	visual.place_riders(orbit)
+	for seat: int in range(MAX_RIDERS):
+		orbit_motion[seat] = absf(angle_difference(previous_angles[seat], orbit.angles[seat])) / maxf(delta * profile.rider_orbit_speed, 0.0001)
 	var surface: Dictionary = path.surface_at(center, route_s)
 	unsupported_time = 0.0 if surface.valid else unsupported_time + delta
 	upside_down_time = upside_down_time + delta if state.transform.basis.y.dot(Vector3.UP) < 0.2 else 0.0
@@ -196,6 +240,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if support > 0:
 		var horizontal: Vector3 = state.linear_velocity.slide(frame.normal)
 		state.apply_central_force(-horizontal * mass * profile.water_drag + surface.flow * mass)
+		var load: Vector3 = Vector3.ZERO
+		var riders: int = MAX_RIDERS - seat_control.count("empty")
+		for seat: int in range(MAX_RIDERS):
+			if seat_control[seat] != "empty":
+				load += state.transform.basis * orbit.offset(seat, SharedRingPreview.SEAT_RADIUS) / maxf(riders, 1)
+		state.apply_torque(load.cross(Vector3.DOWN * mass * 9.8) * profile.rider_load_shift)
 	var occupied: int = MAX_RIDERS - seat_control.count("empty")
 	for index: int in range(MAX_RIDERS):
 		firing[index] = false
@@ -208,7 +258,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			var burn: float = minf(gas[index], profile.gas_drain * strength[index] * delta)
 			var available: float = burn / maxf(profile.gas_drain * strength[index] * delta, 0.000001)
 			var force: Vector3 = direction * mass * profile.thrust_acceleration * strength[index] * available / pow(float(occupied), 0.72)
-			var offset: Vector3 = state.transform.basis * Vector3(sin(index * TAU / 4) * 1.4, 0.08, cos(index * TAU / 4) * 1.4)
+			var offset: Vector3 = state.transform.basis * orbit.offset(index, SharedRingPreview.SEAT_RADIUS, 0.08)
 			state.apply_force(force, offset)
 			gas[index] -= burn
 			force_seconds[index] += delta * available
@@ -239,6 +289,9 @@ func respawn_at_checkpoint() -> void:
 	if not simulate:
 		return
 	release_all_inputs()
+	orbit.reset()
+	orbit_motion.fill(0.0)
+	visual.place_riders(orbit)
 	global_transform = checkpoint
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
@@ -251,9 +304,11 @@ func respawn_at_checkpoint() -> void:
 	reset_physics_interpolation()
 	recovered.emit()
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	var pose: Transform3D = get_global_transform_interpolated()
+	visual.animate_riders(firing if simulate and not falling else quiet_firing, orbit_motion if simulate and not falling else quiet_motion, delta)
 	for index: int in range(jets.size()):
-		jets[index].global_position = global_transform * Vector3(sin(index * TAU / 4) * 1.9, 0.4, cos(index * TAU / 4) * 1.9)
+		jets[index].global_position = pose * orbit.offset(index, 1.70, 0.44)
 		jets[index].direction = -aim[index] + Vector3.UP * 0.15
 		jets[index].emitting = firing[index] and simulate and not falling
 		var active: bool = jets[index].emitting and held[index]
@@ -264,9 +319,14 @@ func _process(_delta: float) -> void:
 			else:
 				thrust_stopped.emit(index)
 	if path != null:
-		var frame: Dictionary = path.surface_at(global_position, route_s)
-		ripple.visible = frame.valid and not falling and absf(global_position.y - frame.height) < 1.4
-		ripple.global_transform = Transform3D(Basis(frame.lateral, frame.normal, -frame.tangent), Vector3(global_position.x, frame.height + 0.04, global_position.z))
+		var at: Vector3 = pose.origin
+		var frame: Dictionary = path.surface_at(at, route_s)
+		ripple.visible = frame.valid and not falling and absf(at.y - frame.height) < 1.4
+		ripple.global_transform = Transform3D(Basis.looking_at(frame.tangent, frame.normal), Vector3(at.x, frame.height + 0.04, at.z))
+		var velocity: Vector3 = linear_velocity.slide(frame.normal)
+		spray.global_position = Vector3(at.x, frame.height + 0.12, at.z) - velocity.normalized() * 2.3
+		spray.direction = (-velocity.normalized() + Vector3.UP * 1.4).normalized()
+		spray.emitting = ripple.visible and simulate and velocity.length() > 2.0
 
 func _on_contact(_body: Node) -> void:
 	contact_count += 1

@@ -526,3 +526,108 @@ HTML/images are preserved outside this phase commit.
 
 Commit message: `Phase 2: four-rider ring, curved terrain and cooperative obstacles`.
 Run/manual steps: [PHASE2_SKY_GARDEN_TESTING.md](PHASE2_SKY_GARDEN_TESTING.md).
+
+
+---
+
+# Phase 2 feedback revision: moving riders and water - 2026-11-02
+
+The user reported weak water/physics presentation and fixed inward-facing riders,
+then explicitly chose **aim also moves the rider around the rim**. Implemented
+this as a Phase 2 correction before expanding the environment set.
+
+## Shared behavior and presentation
+
+Riders now face outward in both preview and gameplay. `RiderOrbit` moves their
+positions at fixed physics steps with bounded speed and 0.76-radian minimum
+angular separation. Controller/seat identity stays stable. Movement alone costs
+no gas. Forces use those same moving lever arms; a small bounded supported load
+shift adds real torque. `RingPhysicsProfile` owns orbit speed, load shift,
+angular damping and water drag. Drift remains after release; axes stay free.
+
+The static hull and each rider's body are batched separately, preserving movable
+anchors and a separate clothed rear panel. Actual firing drives red rear tint,
+lean and the existing jets; release cools the tint. Jets follow the moving rear
+positions with an interpolated hull pose. No meshes/materials/particle nodes
+are rebuilt during sustained movement or thrust.
+
+`WaterStyle` is the shared Resource for palette, two wave components and amplitude.
+`CoursePath` uses the same analytic waves and derivatives for buoyant height/
+normal that `CurvedCourse` supplies to the water shader. `Level.race_time` drives
+both and pause freezes both. Waves never restore support over holes/edges.
+Generated water has six strips across its width for bounded displacement cost.
+Lit shading, view-dependent highlights, caustics, bank/hole foam, speed-dependent
+wake and pooled spray replace the old unlit dotted surface. Fine ripples/caustics/
+wake remain cosmetic; the two main waves affect the real hull. This is a bounded
+surface model, not full fluid simulation. Real collision, gravity, slope motion
+and cooperative fall/finish behavior remain in the shared rigid body.
+
+Future courses must reuse WaterStyle, RiderOrbit, RingPhysicsProfile and the
+same path/mesh/physics code. They can change route data/palette without inventing
+another movement model. The canonical environment spec, plan and both pack
+mirrors now reflect this user-authorized change. LAN replication of authoritative
+orbit angles remains a future Phase 4 requirement; no network work was started.
+
+## Validation and evidence
+
+Final `tools/run_tests.sh`: **55 tests / 2,298 assertions / 13 suites pass**,
+including every prior test. New checks cover outward faces, orbit spacing,
+movement without gas, real moving force anchors, red tint/decay, analytic wave
+gradients, CPU/shader parameter agreement, physical hull movement without
+thrust, paused water time and suppression of wake/support during falls. The
+existing mean-height query assertion now includes the shared wave displacement;
+its tolerance is unchanged. No assertions were removed or weakened.
+
+Full legal-input driver, seed 4, with no transform changes after spawn:
+
+| Riders | Finish seconds | Contacts | Recoveries | Beans |
+|---|---:|---:|---:|---:|
+| 1 | 132.88 | 1 | 0 | 10 |
+| 2 | 120.85 | 1 | 0 | 10 |
+| 3 | 114.17 | 2 | 0 | 10 |
+| 4 | 110.88 | 1 | 0 | 10 |
+
+All crossed both checkpoints and the cooperative finish. A rendered recorded
+four-seat seed 5 run also passed: 110.90 s, one contact, no recoveries, 10 beans,
+14.69-degree peak physical tilt, maximum 80 draw calls / 56,402 visible primitives.
+Its frame times include disk capture and are not normal gameplay performance.
+
+The focused pose/thrust/wake fixture passed at portrait 720 x 1280: up to 106 draw
+calls / 55,200 visible primitives, 11.13 m/s before release and 4.99 m/s after its
+coasting interval. New hole/edge fixtures pass headless and rendered, with two
+whole-crew recoveries and no stale input. The controlled live mallet fixture
+reaches 41.98 degrees of physical tilt with an actual contact. Those deliberate
+placement fixtures are distinct from legal-input completion evidence.
+
+Actual menu/profile/practice navigation and portrait layout checks pass again.
+Updated preview samples: one rider 71 calls / 9,666 primitives; four riders
+118 / 17,926; creator 129 / 17,194. These are desktop counters, not phone FPS.
+New `phase2_feel_*` captures show outward/orbit/thrust/release/wake and recovery;
+`phase2_feel_course_*` shows the updated full course. The earlier captures remain
+historical. The new uninterrupted scripted recording is
+`export/TootTubes-phase2-water-riders-demo.mp4`: H.264, 720 x 1280, 30 FPS,
+3,474 frames / 115.80 seconds. Encoded start/middle/end frames were decoded
+and inspected. Recording/capture inputs are scripted, not human playtests.
+
+Non-recording four-seat seed 6 run on Intel UHD Graphics, Compatibility,
+720 x 1280: median **16.656 ms**, p95 **18.488 ms**, maximum **80 draw calls /
+56,402 visible primitives**. Completion 110.92 s, one contact, no recoveries,
+ten beans, 14.76-degree peak tilt. No capture/encoding process ran during this
+measurement. Desktop timing does not establish phone FPS or heat acceptance.
+
+## APK and acceptance
+
+New artifact: `export/TootTubes-phase2-water-riders-debug.apk`, version
+**0.4.1-water-riders / code 7**, **57,855,109 bytes**. Android export succeeded;
+apksigner verifies v2/v3 signatures. Package/minimum API stay
+`com.itsd85.toottubes.prototype` / 24. Archive checks confirm WaterStyle,
+RiderOrbit and route shader resources and exclude reference video/pack, tests,
+tools, documentation and credentials. Old APKs remain separate.
+
+Gate 2 automated/code portions pass. Human assessment of the new orbit, spacing,
+red feedback, water/camera readability and a completed run remains open. Real
+phone install/upgrade, two-finger input, Back, sustained frame pacing and heat
+remain unverified. Nothing in Phase 3 has started. User edits to project.godot
+and untracked reference media/pack documents remain outside the commit.
+
+Guide: [PHASE2_WATER_RIDERS.md](PHASE2_WATER_RIDERS.md).

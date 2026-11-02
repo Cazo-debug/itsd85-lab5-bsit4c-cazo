@@ -46,7 +46,7 @@ func test_surface_and_progress_match_the_local_route_and_openings() -> void:
 		var frame: Dictionary = path.sample(fraction * path.length)
 		var query: Dictionary = path.surface_at(frame.position, frame.s)
 		assert_true(query.valid)
-		assert_almost_eq(query.height, frame.position.y, 0.01)
+		assert_almost_eq(query.height, frame.position.y + path.water_style.displacement(frame.s, 0, path.water_time).x, 0.01)
 	assert_false(path.exposed_at(path.length * 0.1, 1))
 	assert_true(path.exposed_at(path.length * 0.28, 1))
 	assert_false(path.exposed_at(path.length * 0.28, -1))

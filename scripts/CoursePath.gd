@@ -8,6 +8,8 @@ var step: float = 1.2
 var holes: Array[Dictionary] = []
 var width_keys: Array = []
 var exposed: Vector2 = Vector2(0.245, 0.315)
+var water_style: WaterStyle = WaterStyle.new()
+var water_time: float = 0.0
 
 func build(definition: Dictionary) -> void:
 	curve.clear_points()
@@ -20,6 +22,7 @@ func build(definition: Dictionary) -> void:
 		curve.add_point(points[index], -handle, handle)
 	length = curve.get_baked_length()
 	width_keys = definition.widths
+	water_style = definition.get("water_style", WaterStyle.new())
 	holes.clear()
 	for hole: Dictionary in definition.holes:
 		holes.append({"s": hole.fraction * length, "lateral": hole.lateral, "radius": hole.radius})
@@ -81,13 +84,17 @@ func surface_at(point: Vector3, previous_s: float) -> Dictionary:
 	if (result.s < 0.01 and (point - result.position).dot(result.tangent) < 0) or (result.s > length - 0.01 and (point - result.position).dot(result.tangent) > 0):
 		valid = false
 	result["valid"] = valid
+	var wave: Vector3 = water_style.displacement(result.s, result.offset, water_time)
+	result.position += result.lateral * result.offset + Vector3.UP * wave.x
+	result.normal = (result.lateral + Vector3.UP * wave.z).cross(result.tangent + Vector3.UP * wave.y).normalized()
 	result["height"] = result.position.y
 	result["flow"] = result.tangent * (1.3 if result.s / length > 0.18 and result.s / length < 0.23 else 0.0)
 	return result
 
 func safe_transform(distance: float) -> Transform3D:
-	var frame: Dictionary = sample(distance)
-	return Transform3D(Basis(frame.lateral, frame.normal, -frame.tangent), frame.position + frame.normal * 0.28)
+	var at: Dictionary = sample(distance)
+	var frame: Dictionary = surface_at(at.position, distance)
+	return Transform3D(Basis.looking_at(frame.tangent, frame.normal), frame.position + frame.normal * 0.28)
 
 func exposed_at(distance: float, side: float) -> bool:
 	return side > 0 and distance / length > exposed.x and distance / length < exposed.y

@@ -73,7 +73,7 @@ func configure(profiles: Array[Dictionary], slots: Array[Dictionary], leader: in
 		var anchor: Node3D = Node3D.new()
 		anchor.name = "Seat%d" % (index + 1)
 		anchor.position = Vector3(sin(angle), 0, cos(angle)) * SEAT_RADIUS
-		anchor.rotation.y = angle + PI
+		anchor.rotation.y = angle
 		add_child(anchor)
 		anchors.append(anchor)
 		var pad: CylinderMesh = CylinderMesh.new()
@@ -100,3 +100,29 @@ func configure(profiles: Array[Dictionary], slots: Array[Dictionary], leader: in
 					puff.radial_segments = 8
 					puff.rings = 4
 					mesh_part(rider, puff, colors[rider.appearance.toot], Vector3(0, 0.1, -0.65 - puff_index * 0.35))
+
+func bake_moving_parts() -> void:
+	# Keep each rider independently movable; only static subassemblies are baked.
+	var hull: MeshInstance3D = MeshBatch.bake(ring)
+	hull.material_override.roughness = 0.28
+	for anchor: Node3D in anchors:
+		for child: Node in anchor.get_children():
+			if child is RiderModel:
+				MeshBatch.bake(child.body_root)
+
+func update_riders(orbit: RiderOrbit, active: Array[bool], moving: Array[float], delta: float) -> void:
+	place_riders(orbit)
+	animate_riders(active, moving, delta)
+
+func place_riders(orbit: RiderOrbit) -> void:
+	for seat: int in range(4):
+		var anchor: Node3D = anchors[seat]
+		anchor.position = orbit.offset(seat, SEAT_RADIUS)
+		anchor.rotation.y = orbit.angles[seat]
+
+func animate_riders(active: Array[bool], moving: Array[float], delta: float) -> void:
+	for seat: int in range(4):
+		var anchor: Node3D = anchors[seat]
+		for child: Node in anchor.get_children():
+			if child is RiderModel:
+				child.animate_activity(delta, active[seat], moving[seat])

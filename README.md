@@ -1,6 +1,6 @@
 # Toot Tubes
 
-**Updated 2026-11-02: revised Phase 2 is implemented.** Play now opens the curved, elevated Sky Garden with one physical ring and 1-4 cooperating riders. Human play and real-phone acceptance remain pending. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
+**Updated 2026-11-02: revised Phase 2 is implemented.** Play opens the curved, elevated Sky Garden with one physical ring and 1-4 cooperating riders. The latest Phase 2 revision adds outward-facing riders that move around the rim when aimed, red thrust feedback and shared wave-driven water. Human play and real-phone acceptance remain pending. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
 
 Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. The route, riders and scenery use original procedural artwork. Campaign expansion, LAN and finished audio remain later phases.
 
@@ -20,8 +20,8 @@ If the local engine is missing, run `.\tools\setup_godot.ps1` first.
 
 In Crew Setup, select a seat and cycle **Seat** through Empty, Assistant and Local rider. Pick an unused profile with the arrows; **Edit rider** changes that profile and **Make leader** chooses the shared ring style. Keep at least one local rider. **Control this seat** selects the phone/primary keyboard seat. Assistants now steer with the same gas and physics rules.
 
-- Desktop: **WASD** aims the selected seat; hold **Space** to fart, release to coast. Aim is relative to the camera.
-- Touch: aim with the left pad and hold the right pad with another finger. Release or drag outside HOLD to stop. Centering AIM also stops thrust.
+- Desktop: **WASD** aims and moves the selected rider around the rim; hold **Space** to fart, release to coast. Aim is relative to the camera.
+- Touch: aim/move your rider with the left pad and hold the right pad with another finger. Release or drag outside HOLD to stop. Centering AIM also stops thrust.
 - Independent debug seats: seat 2 **IJKL + U**, seat 3 **TFGH + R**, seat 4 **arrows + Enter**. Primary WASD controls the selected seat; its duplicate binding is skipped. Keyboard rollover can limit simultaneous physical keys.
 - **Pause/Resume**, **Recover** and **Back/Escape** work. A fall clears input and returns the entire crew to its checkpoint while the clock continues. Release and press again after pause/recovery.
 
@@ -31,7 +31,7 @@ Existing version-2 profiles/progress are preserved. Original save migration back
 
 ## Android and verification
 
-Updated build: `export/TootTubes-phase2-sky-garden-debug.apk` (0.4-sky-garden, code 6). Install this build instead of the Phase 1 preview APK. The export folder is intentionally ignored by Git.
+Updated build: `export/TootTubes-phase2-water-riders-debug.apk` (0.4.1-water-riders, code 7). Install this build instead of the Phase 1 preview APK. The export folder is intentionally ignored by Git.
 
 ```powershell
 .\tools\run_tests.ps1
@@ -40,4 +40,6 @@ Updated build: `export/TootTubes-phase2-sky-garden-debug.apk` (0.4-sky-garden, c
 
 Git Bash/Linux: `bash tools/run_tests.sh`. Tests and verification tools use disposable save files.
 
-See [the current Phase 2 testing guide](docs/PHASE2_SKY_GARDEN_TESTING.md) for phone steps, four-controller checks, captures and performance limits. [Progress](docs/PROGRESS.md) separates automated/rendered results from pending human/device gates. The uninterrupted **scripted** gameplay recording is `export/TootTubes-phase2-sky-garden-demo.mp4`.
+See [the current Phase 2 testing guide](docs/PHASE2_SKY_GARDEN_TESTING.md) for phone steps, four-controller checks, captures and performance limits. [Progress](docs/PROGRESS.md) separates automated/rendered results from pending human/device gates. The uninterrupted **scripted** gameplay recording is `export/TootTubes-phase2-water-riders-demo.mp4`.
+
+The [water/rider revision guide](docs/PHASE2_WATER_RIDERS.md) explains the shared profiles, new behavior and focused acceptance checks. Earlier APKs and captures remain historical.

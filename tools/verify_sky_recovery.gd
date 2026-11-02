@@ -3,8 +3,12 @@ extends SceneTree
 # Deliberate placement fixtures for contact/fall evidence, not solvability runs.
 var level: Node3D
 var failed: bool = false
+var capture_prefix: String = "phase2_v3"
 
 func _initialize() -> void:
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--capture-prefix="):
+			capture_prefix = argument.trim_prefix("--capture-prefix=").validate_filename()
 	call_deferred("verify")
 
 func check(condition: bool, message: String) -> void:
@@ -28,7 +32,7 @@ func resume_fixture() -> void:
 func capture(tag: String) -> void:
 	if "--capture" in OS.get_cmdline_user_args() and DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png("res://docs/screenshots/phase2_v3_%s.png" % tag)
+		root.get_texture().get_image().save_png("res://docs/screenshots/%s_%s.png" % [capture_prefix, tag])
 
 func place(distance: float, lateral: float) -> void:
 	level.player.release_all_inputs()

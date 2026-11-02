@@ -19,3 +19,5 @@ Hole correction: original procedural open cylinder shafts and foam torus rims, b
 Revised Phase 1 crew foundation (2026-11-01): original procedural shared inflatable ring, central platform, seat pads and separate rider models, reusing the existing original palette/hat geometry and shared materials. No new external artwork or audio assets.
 
 Revised Phase 2 (2026-11-02): original 3D Sky Garden spline layout, generated ribbon/bank collision, route-space water/cliff shaders, hole shafts, primitive hazards, shared-ring mesh batching, pooled rider jets and crew HUD. No new third-party artwork or sound assets. Reference video and images remain outside the Android package.
+
+Phase 2 feedback revision (2026-11-02): original lit procedural water shader, shared analytic water waves, bank/hole foam, caustics, wake/spray, moving outward rider poses and clothed red thrust panels. No new third-party media, models, textures or sounds. Godot shader/interpolation references: https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/spatial_shader.html and https://docs.godotengine.org/en/4.7/tutorials/physics/interpolation/advanced_physics_interpolation.html .

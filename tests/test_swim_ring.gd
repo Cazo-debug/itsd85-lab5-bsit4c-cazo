@@ -143,3 +143,32 @@ func test_assistants_use_per_seat_gas_and_release_when_disabled() -> void:
 	brain.enabled = false
 	await wait_physics_frames(2)
 	assert_false(true in ring.held)
+
+func test_aim_moves_the_real_force_anchor_without_consuming_gas() -> void:
+	assert_true(ring.set_aim_input(0, Vector3.FORWARD))
+	var start: Vector3 = ring.orbit.offset(0, SharedRingPreview.SEAT_RADIUS)
+	await wait_physics_frames(40)
+	assert_gt(start.distance_to(ring.orbit.offset(0, SharedRingPreview.SEAT_RADIUS)), 1.0)
+	assert_eq(ring.gas[0], 1.0)
+	assert_eq(ring.force_seconds[0], 0.0)
+	assert_false(ring.set_aim_input(4, Vector3.FORWARD))
+	assert_false(ring.set_aim_input(0, Vector3(INF, 0, 0)))
+	ring.enter_fall()
+	assert_false(ring.set_aim_input(0, Vector3.FORWARD))
+	assert_false(true in ring.aiming)
+	ring.respawn_at_checkpoint()
+	assert_eq(ring.orbit.angles[0], 0.0)
+	assert_false(true in ring.aiming)
+
+func test_waves_move_the_physical_hull_without_thrust() -> void:
+	var low: float = INF
+	var high: float = -INF
+	for frame: int in range(180):
+		path.water_time = frame / 60.0
+		await wait_physics_frames(1)
+		if frame > 60:
+			low = minf(low, ring.position.y)
+			high = maxf(high, ring.position.y)
+	assert_gt(high - low, 0.04, "Physical support responds to the shared waves")
+	assert_false(ring.falling)
+	assert_eq(ring.force_seconds[0], 0.0)

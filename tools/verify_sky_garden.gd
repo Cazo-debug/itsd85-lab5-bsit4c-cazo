@@ -14,6 +14,8 @@ var min_height: float = INF
 var previous_tick: int = 0
 var crew_count: int = 1
 var seed_phase: int = 0
+var capture_prefix: String = "phase2_v3"
+var record_directory: String = ".bin/sky-record-jpg"
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
@@ -21,8 +23,14 @@ func _initialize() -> void:
 			crew_count = clampi(int(argument.trim_prefix("--crew=")), 1, 4)
 		if argument.begins_with("--seed="):
 			seed_phase = int(argument.trim_prefix("--seed="))
+		if argument.begins_with("--capture-prefix="):
+			capture_prefix = argument.trim_prefix("--capture-prefix=").validate_filename()
+		if argument.begins_with("--record-dir=.bin/") and not argument.contains(".."):
+			record_directory = argument.trim_prefix("--record-dir=")
 	captures = "--capture" in OS.get_cmdline_user_args()
 	recording = "--record" in OS.get_cmdline_user_args()
+	if recording:
+		DirAccess.make_dir_recursive_absolute("res://" + record_directory)
 	call_deferred("verify")
 
 func check(condition: bool, message: String) -> void:
@@ -33,7 +41,7 @@ func check(condition: bool, message: String) -> void:
 func capture(tag: String) -> void:
 	if captures and DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png("res://docs/screenshots/phase2_v3_%s.png" % tag)
+		root.get_texture().get_image().save_png("res://docs/screenshots/%s_%s.png" % [capture_prefix, tag])
 
 func _process(_delta: float) -> bool:
 	if is_instance_valid(level) and level.race_time > 1:
@@ -86,7 +94,7 @@ func verify() -> void:
 			capture_index += 1
 		if recording and frame_count % 2 == 0 and DisplayServer.get_name() != "headless":
 			await RenderingServer.frame_post_draw
-			root.get_texture().get_image().save_jpg("res://.bin/sky-record-jpg/%05d.jpg" % record_index, 0.9)
+			root.get_texture().get_image().save_jpg("res://%s/%05d.jpg" % [record_directory, record_index], 0.9)
 			record_index += 1
 	check(level.won, "Normal thrust driver did not finish")
 	check(level.checkpoint_index == 2, "Both ordered checkpoints must be crossed")

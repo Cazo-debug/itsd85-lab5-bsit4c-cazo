@@ -57,15 +57,15 @@ Retain the bright palette: sky #6EC6F0/#BDEBFB/#EEF9FF, turquoise water #22A7D6/
 
 Cliffs extend downward relative to each local bank top; use visible strata and depth haze. Clouds sit beneath and beside the route, not as an ocean substitute. Keep floating islands, foliage, umbrellas and balloons outside the playable collision corridor. Do not block upcoming hazards with decorations.
 
-Water flow animation uses route coordinates so streaks follow curves/downhill sections. Small cosmetic ripples do not alter the authoritative support surface. Render ordinary ripples and blob shadows just above the queried local surface, orient them to its normal, and suppress them while airborne or falling.
+Water flow animation uses route coordinates so streaks follow curves/downhill sections. The two low-amplitude wave components in `WaterStyle` drive both rendered displacement and authoritative buoyant height/normal using `Level.race_time`; pause freezes both. Finer caustics and normal ripples remain cosmetic. Bank/hole foam, view-dependent highlights, speed-based wake and pooled spray show water interaction. These are bounded water-surface dynamics rather than a full fluid simulation. Render ordinary ripples and blob shadows just above the queried local surface, orient them to its normal, and suppress them while airborne or falling.
 
 Holes remove both visible water and physical support. Use a local surface frame for rim and open shaft. Scope shader cut-outs to relevant chunks/heights so a hole on one elevated section cannot erase an unrelated section below it. No orange cap or solid collider across the opening. Foam rings identify holes; green/orange solid islands remain distinct decorations/obstacles only when intentionally authored.
 
 Use shared materials per needed course/chunk parameter set, MultiMesh for repeated small parts, low-poly meshes, CPU particles, simple shaders and no real-time shadows. Maintain the plan's measured phone budgets; no expensive full fluid simulation is required.
 
-## 4. One ring, four rider anchors
+## 4. One ring, four mobile rider positions
 
-One `SwimRing` owns the physical body, rim/platform, crew, gas state and recovery state. Four well-spaced anchors around the perimeter support 1-4 occupied slots. Ring dimensions/collision match the visible hull and rider clearance; starting prototype radius around 1.8 m is tunable. Rider meshes stay attached during ordinary movement and lean with the hull. No independently moving player floats.
+One `SwimRing` owns the physical body, rim/platform, crew, gas state and recovery state. Four stable controller/seat IDs support 1-4 occupied slots. Their physical rider positions move around the rim in response to aim, with bounded speed and minimum angular separation. Faces point outward; seats are not fixed visual positions. Ring dimensions/collision match the visible hull and rider clearance; starting prototype radius around 1.8 m is tunable. Rider meshes remain on the shared hull, lean while firing and shuffle while orbiting. The clothed rear panel warms red only during real thrust and cools after release. Dynamic lever arms and a small supported weight-shift torque follow the same authoritative orbit angles. No independently moving player floats.
 
 Each slot has a unique owner/controller, sanitized avatar, aim direction, held state, requested strength and gas value. Empty seats exert no force. Teammate assistants use this same API and never teleport or steer a second body. Ring appearance belongs to the shared craft rather than to competing teams.
 
@@ -79,7 +79,7 @@ Short presses give short thrust; held presses sustain thrust until release or de
 
 Combined linear force is the sum of active seats. Torque follows force direction and lever arm; a radial force aimed exactly through the center has no steering torque. Therefore allow aim directions that generate controlled torque. A symmetric left/right pair pushing forward should mostly cancel yaw; inconsistent direction or timing can turn the craft. Do not assert that every single-seat push must spin it regardless of geometry.
 
-Keep thrust, gas rates, damping, support spring/damping, speed and spin limits together in `RingPhysicsProfile`. Tune with 1/2/3/4 occupied slots so fewer players can complete the course and four cannot trivially bypass every obstacle. Initial tuning is a prototype decision; no exact constants were measured from the clip. Pickups replenish the occupied crew with capacity clamps and a visible explanation.
+Keep thrust, gas rates, damping, support spring/damping, speed/spin limits, orbit speed and supported rider-load shift together in `RingPhysicsProfile`. Reuse `WaterStyle`, `RiderOrbit` and the same physics/visual pipeline for future environments; vary data and palette without duplicating behavior. Tune with 1/2/3/4 occupied slots so fewer players can complete the course and four cannot trivially bypass every obstacle. Initial tuning is a prototype decision; no exact constants were measured from the clip. Pickups replenish the occupied crew with capacity clamps and a visible explanation.
 
 Jets emit opposite the applied push, at the corresponding rider, while that rider is actually thrusting. Use pooled/limited effects and attack/loop/release audio hooks. Releasing must stop emission promptly while previously emitted particles dissipate naturally. Cosmetic particle lifetime is not proof of continued force.
 

@@ -1,6 +1,6 @@
 # Revised Phase 2: Sky Garden testing
 
-Updated 2026-11-02. This is the current shared-ring game; the earlier PHASE2_TESTING.md describes a retired solo prototype.
+Updated 2026-11-02. Latest build is 0.4.1-water-riders / code 7; see [the water/rider feedback guide](PHASE2_WATER_RIDERS.md). This is the current shared-ring game; the earlier PHASE2_TESTING.md describes a retired solo prototype.
 
 ## Open the right version
 
@@ -18,7 +18,7 @@ Use **Practice** in Crew Setup for untimed exploration. **Next area** advances t
 
 - [ ] Configure 1, 2, 3 and 4 occupied seats; try one Local rider with three Assistants. Verify one ring, distinct profiles and the chosen leader's style.
 - [ ] Try all-empty seats: Start should show a message rather than launching. Choose the active local seat with **Control this seat**.
-- [ ] Aim with **WASD**, hold **Space**, release, then press again. Brief bursts and longer holds should differ; drift continues after release. Rest to refill gas; depleted gas needs release before firing again.
+- [ ] Aim/move your rider around the rim with **WASD**, hold **Space**, release, then press again. Brief bursts and longer holds should differ; drift continues after release. Rest to refill gas; depleted gas needs release before firing again.
 - [ ] Four-controller debug: seat 2 **IJKL/U**, seat 3 **TFGH/R**, seat 4 **arrows/Enter**. WASD/Space controls the selected seat; the duplicate binding for that seat is skipped. Check independent gas and opposing pushes. Hardware keyboard rollover may limit simultaneous keys.
 - [ ] Follow both S-bends, the exposed narrow bridge, climb, crest, high hairpin, downhill and dip. The body must change height and tilt; the camera must show upcoming turns without following every hull spin.
 - [ ] Touch bumpers, sweeper, mallet and moving spiked crossbar. They push/tip instead of instantly killing the crew. Release thrust in the current and on the descent to see drift.
@@ -59,12 +59,12 @@ Use an empty recording directory for a new run; stale tail frames from an earlie
 
 ## Install and check on Android
 
-Build: **0.4-sky-garden / code 6**, `export/TootTubes-phase2-sky-garden-debug.apk`, same package `com.itsd85.toottubes.prototype`. Install this APK over the previous compatible debug-signed build to preserve saves. Do not uninstall to work around a signature mismatch if you need those saves.
+Build: **0.4.1-water-riders / code 7**, `export/TootTubes-phase2-water-riders-debug.apk`, same package `com.itsd85.toottubes.prototype`. Install this APK over the previous compatible debug-signed build to preserve saves. Do not uninstall to work around a signature mismatch if you need those saves.
 
 With USB debugging enabled and the phone authorized:
 
 ```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r .\export\TootTubes-phase2-sky-garden-debug.apk
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r .\export\TootTubes-phase2-water-riders-debug.apk
 ```
 
 Alternatively copy the APK to the phone and open it. Android may request permission to install from that source.

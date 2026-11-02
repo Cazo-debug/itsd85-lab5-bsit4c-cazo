@@ -96,9 +96,15 @@ func _physics_process(_delta: float) -> void:
 			if value.length_squared() > 0:
 				stick = value.normalized()
 			var mouse_aim: Vector3 = world_direction(stick)
-			ring.set_thrust_input(seat, mouse_aim, stick.length(), (pressed or gas_id >= 0) and stick.length() >= 0.15)
-		elif pressed or last_keyboard_fire[binding]:
-			ring.set_thrust_input(seat, world_direction(value if value.length_squared() > 0 else Vector2(0, -1)), 1.0, pressed)
+			if value.length_squared() > 0 or stick_id >= 0 or gas_id >= 0 or pressed:
+				ring.set_aim_input(seat, mouse_aim)
+			ring.set_thrust_input(seat, mouse_aim if pressed or gas_id >= 0 else Vector3.ZERO, stick.length(), (pressed or gas_id >= 0) and stick.length() >= 0.15)
+		elif value.length_squared() > 0 or pressed or last_keyboard_fire[binding]:
+			var direction: Vector3 = world_direction(value) if value.length_squared() > 0 else ring.aim[seat]
+			if direction.length_squared() < 0.001:
+				direction = world_direction(Vector2(0, -1))
+			ring.set_aim_input(seat, direction)
+			ring.set_thrust_input(seat, direction, 1.0, pressed)
 		last_keyboard_fire[binding] = pressed
 	queue_redraw()
 
