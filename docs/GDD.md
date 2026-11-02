@@ -1,13 +1,13 @@
 # Toot Tubes - Game Design Document
 
-Status: revised Phase 1 implemented 2026-11-01; manual phone acceptance pending. The app now has four saved profiles and a shared-ring crew preview. The playable course remains the labeled solo prototype with sky scenery and six holes. Revised Phase 2 is not implemented. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
+Status: revised Phases 1 and 2 implemented, updated 2026-11-02; human play and real-phone acceptance pending. Main Play now launches one shared physical ring on the curved, elevated Sky Garden. Practice uses the same geometry with section reset points and no timer. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
 
 | Area | Implemented baseline | v3 target still pending |
 |---|---|---|
 | Riders and saves | Four profiles, validated seats/owners, profile-0 avatar alias, version-2 saves and original-file migration backup | Network-owned rider seats |
-| Preview and navigation | One ring/platform with four separate rider anchors; profile editor, local/assistant/empty selection and leader style | Active assistant steering and four local controllers |
-| Course and movement | Legacy solo Level 1 remains runnable | Shared rigid body, held gas, curves, climbs/descents and new obstacles in Phase 2 |
-| Validation | Migration/crew/UI tests, rendered portrait checks, legacy regression | Real-phone review and revised gameplay acceptance |
+| Preview and navigation | One ring with four rider anchors, saved profiles/leader style, active assistants and four local controller bindings | Four-phone LAN in Phase 4 |
+| Course and movement | One physical ring, sustained gas, S-bends, bridge, climb, hairpin, descent/dip and six hazard types | Four more campaign courses in Phase 3 |
+| Validation | Migration/crew/UI, live physics, recovery, legal-input 1-4 rider completions and rendered portrait checks | Real-phone review and revised gameplay acceptance |
 
 ## 1. Title and pitch
 
@@ -19,7 +19,7 @@ Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer. Desktop
 
 ## 3. Core gameplay and controls
 
-Target: aim, hold to thrust, release to stop, repeat as needed. Each rider has independent continuous gas and effects; their forces combine on one ring. Momentum, water resistance, gravity and collisions produce drift, yaw, pitch and roll. This control mapping is our design choice, not a verified mapping from the reference video. The current app's water taps and three discrete gas charges are legacy mechanics to migrate.
+Implemented: aim, hold to thrust, release to stop, repeat as needed. Each rider has independent continuous gas and effects; their forces combine on one ring. Momentum, water resistance, gravity and collisions produce drift, yaw, pitch and roll. This control mapping is our design choice, not a verified mapping from the reference video. The old water-tap/three-charge mechanic is isolated in legacy regression fixtures.
 
 ## 4. Goals, win and loss
 
@@ -49,7 +49,7 @@ Original thrust attack/loop/release hooks, impact/fall/pickup/UI effects, option
 
 ## 10. Interface and accessibility
 
-Retain Title, first-use Avatar Creator, Main Menu and Back navigation. Phase 1 adds four-slot crew preview/profile management. Phase 2 adds aim/hold controls, compact rider gas/status labels, one crew progress indicator, goal and timer. Keep minimum 28 px body text, 120 px touch targets and the top 80 px safe area at 720 x 1280. Do not place four full control panels on one phone. Handle touch release, focus loss and reduced-motion camera settings.
+Retain Title, first-use Avatar Creator, Main Menu and Back navigation. Phase 1 adds four-slot crew preview/profile management. Phase 2 adds aim/hold controls, compact rider gas/status labels, one crew progress indicator, goal and timer. Keep minimum 28 px body text, 120 px touch targets and the top 80 px safe area at 720 x 1280. Do not place four full control panels on one phone. Touch release and focus loss clear held state. Reduced-motion settings remain polish work.
 
 ## 11. Technical plan and validation
 

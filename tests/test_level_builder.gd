@@ -5,10 +5,10 @@ var builder: LevelBuilder
 func before_each() -> void:
 	builder = LevelBuilder.new()
 	add_child_autofree(builder)
-	builder.build(LevelDefs.LEVELS[0])
+	builder.build(LevelDefs.LEGACY_LEVELS[0])
 
 func test_tutorial_course_has_all_required_parts() -> void:
-	var definition: Dictionary = LevelDefs.LEVELS[0]
+	var definition: Dictionary = LevelDefs.LEGACY_LEVELS[0]
 	assert_not_null(builder.start)
 	assert_eq(builder.start.position, LevelDefs.world_point(definition.start))
 	assert_true(builder.finish is CoursePiece)
@@ -45,7 +45,7 @@ func test_bean_collects_once_then_respawns() -> void:
 	await get_tree().process_frame
 
 func test_countdown_timeout_checkpoint_and_finish_rules() -> void:
-	var level: RaceLevel = preload("res://scenes/levels/Level01.tscn").instantiate() as RaceLevel
+	var level: RaceLevel = preload("res://scenes/legacy/LegacyLevel01.tscn").instantiate() as RaceLevel
 	level.auto_return = false
 	add_child(level)
 	level.set_physics_process(false)

@@ -2,7 +2,7 @@
 
 Revised 2026-11-01. Target: Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer.
 
-**Status (2026-11-01): revised Phase 1 implemented; manual acceptance pending.** Migration, four profiles, crew preview and navigation checks pass; see `docs/PROGRESS.md` and `docs/PHASE1_CREW_TESTING.md`. Revised Phase 2 remains planned and unimplemented. The old playable solo course remains explicitly labeled as a legacy prototype. Editing this plan alone does not authorize execution.
+**Status (2026-11-02): revised Phases 1 and 2 implemented; human/device gates pending.** Main Play launches the curved, elevated Sky Garden with one physical ring and 1-4 riders; untimed Practice is reachable. Automated tests and scripted completions pass. See `docs/PROGRESS.md` and `docs/PHASE2_SKY_GARDEN_TESTING.md`. Phase 3 has not started.
 
 The user has replaced the earlier competitive design with **one shared swim ring carrying up to four cooperating riders**, varied curved/elevated courses, repeated directional thrust and many obstacles. This document is the authoritative implementation plan; [ENVIRONMENT_SPEC.md](ENVIRONMENT_SPEC.md) defines geometry, movement and hazard behavior. User instructions take precedence. The old HTML sample is a visual reference, not a source of mandatory gameplay numbers. Previous plans are preserved under `docs/archive/` as historical material only.
 
@@ -124,7 +124,7 @@ Stop at this gate. Do not begin Phase 2 without the user's execution instruction
 
 ## Phase 2: Shared-ring physics, curved sky course and obstacle prototype
 
-**Revision 2026-11-01: replace the playable environment. Status: NOT EXECUTED.**
+**Revision 2026-11-01: replace the playable environment. Implemented 2026-11-02; human play and phone acceptance remain pending.**
 
 **Goal:** pressing Play must lead to a visibly new, playable 3D sky waterpark with one shared ring carrying the selected 1-4 riders. The course must visibly wind, narrow, climb and descend, with repeated directional fart thrust and physical obstacles. Ship one complete original course plus an accessible practice route. A crew preview, background recolor, isolated geometry demo or unchanged legacy Level 1 does not complete this phase.
 
@@ -204,16 +204,18 @@ New `SwimRing`, `CrewInput`, `CrewBrain`, `CoursePath`, `RingPhysicsProfile`, `C
 
 ### Gate 2
 
-- [ ] All new and migrated tests pass; exactly one physical ring in the playable scene.
-- [ ] F5 -> Play -> Start Sky Garden opens the visibly new environment with the saved crew; Practice is reachable; the old solo course is not the default.
-- [ ] Four occupants can contribute independently; short bursts, long holds and simultaneous pushes are visibly distinct.
-- [ ] Geometry fixture proves curves, S-bends, hairpins, narrow route, uphill, downhill and dip.
-- [ ] Playable Level 1 includes the seven connected sections, six working hazard types, at least two bumpers/two holes and two safe checkpoints.
-- [ ] Collisions can tilt and displace the ring; the crew can recover; falls reset everyone safely.
+- [x] All new and migrated tests pass; exactly one physical ring in the playable scene.
+- [x] F5 -> Play -> Start Sky Garden opens the visibly new environment with the saved crew; Practice is reachable; the old solo course is not the default.
+- [x] Four occupants can contribute independently; short bursts, long holds and simultaneous pushes are visibly distinct.
+- [x] Geometry fixture proves curves, S-bends, hairpins, narrow route, uphill, downhill and dip.
+- [x] Playable Level 1 includes the seven connected sections, six working hazard types, at least two bumpers/two holes and two safe checkpoints.
+- [x] Collisions can tilt and displace the ring; the crew can recover; falls reset everyone safely.
 - [ ] Camera stays readable through curves, slopes and impacts; mobile controls release reliably.
 - [ ] Complete a human-played run; record desktop frame times and worst four-rider scene draw/triangle counts.
 - [ ] Install debug APK on a real phone; check sustained touch, portrait, frame pacing and heat. Do not substitute desktop measurements for this gate.
-- [ ] Before/after captures and uninterrupted gameplay recording demonstrate the environment and movement change; update progress/testing guide and commit `Phase 2: four-rider ring, curved terrain and cooperative obstacles`.
+- [x] Before/after captures and uninterrupted gameplay recording demonstrate the environment and movement change; update progress/testing guide and commit `Phase 2: four-rider ring, curved terrain and cooperative obstacles`.
+
+Automated/rendered checks support the checked items. Human control/camera feel and real-device acceptance remain open; desktop counters do not establish phone performance.
 
 Stop here. Full campaign and real-phone network co-op remain separate phases.
 

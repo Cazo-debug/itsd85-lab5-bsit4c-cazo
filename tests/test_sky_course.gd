@@ -5,10 +5,10 @@ var builder: LevelBuilder
 func before_each() -> void:
 	builder = LevelBuilder.new()
 	add_child_autofree(builder)
-	builder.build(LevelDefs.LEVELS[0])
+	builder.build(LevelDefs.LEGACY_LEVELS[0])
 
 func test_water_is_confined_to_segments_and_material_is_shared() -> void:
-	var segments: Array = LevelDefs.LEVELS[0].segments
+	var segments: Array = LevelDefs.LEGACY_LEVELS[0].segments
 	assert_eq(builder.water_segments.size(), segments.size())
 	for index: int in range(segments.size()):
 		var water: CoursePiece = builder.water_segments[index]
@@ -33,7 +33,7 @@ func test_cliffs_have_depth_but_collisions_stay_near_water() -> void:
 func test_channel_walls_cover_both_sides_and_turn_joints() -> void:
 	await get_tree().physics_frame
 	var space: PhysicsDirectSpaceState3D = builder.get_world_3d().direct_space_state
-	for segment: Dictionary in LevelDefs.LEVELS[0].segments:
+	for segment: Dictionary in LevelDefs.LEGACY_LEVELS[0].segments:
 		for offset: float in [0.1, 1.5, 12.0, 23.9]:
 			var distance: float = segment.d + offset
 			var origin: Vector3 = Vector3(segment.x, 0, -distance)
@@ -46,7 +46,7 @@ func test_channel_walls_cover_both_sides_and_turn_joints() -> void:
 
 func test_scenery_rebuild_is_deterministic_and_camera_uses_reference_framing() -> void:
 	var cloud: Transform3D = builder.decor.clouds.multimesh.get_instance_transform(0)
-	builder.decor.build(LevelDefs.LEVELS[0].segments)
+	builder.decor.build(LevelDefs.LEGACY_LEVELS[0].segments)
 	assert_eq(builder.decor.clouds.multimesh.get_instance_transform(0), cloud)
 	var camera: RaceCamera = RaceCamera.new()
 	add_child_autofree(camera)

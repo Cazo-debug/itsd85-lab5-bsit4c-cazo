@@ -49,7 +49,7 @@ func verify() -> void:
 	game_state = root.get_node("GameState")
 	game_state.persistence_path = "user://phase2_verifier.cfg"
 	game_state.seen_tutorial = false
-	level = load("res://scenes/levels/Level01.tscn").instantiate() as Node3D
+	level = load("res://scenes/legacy/LegacyLevel01.tscn").instantiate() as Node3D
 	level.auto_return = false
 	root.add_child(level)
 	current_scene = level

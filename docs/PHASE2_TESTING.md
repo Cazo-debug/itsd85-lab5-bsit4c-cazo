@@ -1,3 +1,5 @@
+> Historical solo-prototype guide. For the current shared-ring course use [Phase 2 Sky Garden testing](PHASE2_SKY_GARDEN_TESTING.md). The old controls and APK below are retained as historical evidence only.
+
 # Check Phase 2
 
 ## Run on your computer

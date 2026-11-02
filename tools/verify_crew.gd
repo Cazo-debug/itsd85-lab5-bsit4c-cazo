@@ -40,7 +40,7 @@ func capture(tag: String) -> void:
 	check_layout(current_scene)
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
-		check(root.get_texture().get_image().save_png("res://docs/screenshots/phase1_crew_%s.png" % tag) == OK, "Screenshot failed")
+		check(root.get_texture().get_image().save_png("res://docs/screenshots/phase2_crew_%s.png" % tag) == OK, "Screenshot failed")
 		print("RENDER ", tag, " draw calls: ", Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), " primitives: ", Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 
 func verify() -> void:
@@ -93,10 +93,28 @@ func verify() -> void:
 	check(current_scene.name == "MainMenu", "Android Back failed")
 	check(press_text(current_scene, "Play"), "Play missing")
 	await settle()
-	check(press_text(current_scene, "Modes / legacy prototype"), "Legacy entry missing")
+	check(press_text(current_scene, "Start Sky Garden"), "New playable entry missing")
 	await settle()
-	check(current_scene.name == "ModeSelect", "Mode route failed")
-	await capture("modes")
+	check(current_scene.name == "Level01", "Production route failed")
+	check(current_scene.player.visual.riders.size() == 4, "Saved crew not passed to level")
+	check(current_scene.find_children("*", "RigidBody3D", true, false).size() == 1, "Exactly one physical ring required")
+	check_layout(current_scene.hud.root)
+	current_scene.return_to_menu()
+	await settle()
+	check(press_text(current_scene, "Practice"), "Practice entry missing")
+	await settle()
+	check(current_scene.practice, "Practice route failed")
+	current_scene.begin_run()
+	current_scene.recover()
+	check(current_scene.practice_index == 1, "Practice section reset failed")
+	current_scene.return_to_menu()
+	await settle()
+	for index: int in range(4):
+		state.assign_slot(index, "empty")
+	check(press_text(current_scene, "Start Sky Garden"), "Launch button missing")
+	await settle()
+	check(current_scene.name == "CrewSetup", "Empty crew must stay in setup")
+	check(current_scene.crew_status.text.contains("Add a rider"), "Empty crew needs usable feedback")
 	for suffix: String in ["", ".tmp", ".pre-v2.bak"]:
 		DirAccess.remove_absolute(PATH + suffix)
 	print("Crew navigation, layout and persistence: ", "FAIL" if failed else "PASS")

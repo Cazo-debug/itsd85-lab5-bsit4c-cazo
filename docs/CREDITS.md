@@ -17,3 +17,5 @@ Original procedural Godot scenery: striped cliffs, clouds, floating islands, umb
 Hole correction: original procedural open cylinder shafts and foam torus rims, based on the user-supplied environment specification.
 
 Revised Phase 1 crew foundation (2026-11-01): original procedural shared inflatable ring, central platform, seat pads and separate rider models, reusing the existing original palette/hat geometry and shared materials. No new external artwork or audio assets.
+
+Revised Phase 2 (2026-11-02): original 3D Sky Garden spline layout, generated ribbon/bank collision, route-space water/cliff shaders, hole shafts, primitive hazards, shared-ring mesh batching, pooled rider jets and crew HUD. No new third-party artwork or sound assets. Reference video and images remain outside the Android package.

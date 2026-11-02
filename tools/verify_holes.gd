@@ -23,7 +23,7 @@ func verify() -> void:
 	root.size = Vector2i(720, 1280)
 	var game_state: Node = root.get_node("GameState")
 	game_state.persistence_path = "user://hole_verifier.cfg"
-	level = load("res://scenes/levels/Level01.tscn").instantiate() as Node3D
+	level = load("res://scenes/legacy/LegacyLevel01.tscn").instantiate() as Node3D
 	level.auto_return = false
 	root.add_child(level)
 	current_scene = level

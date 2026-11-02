@@ -3,7 +3,7 @@ extends GutTest
 var level: RaceLevel
 
 func before_each() -> void:
-	level = preload("res://scenes/levels/Level01.tscn").instantiate() as RaceLevel
+	level = preload("res://scenes/legacy/LegacyLevel01.tscn").instantiate() as RaceLevel
 	level.auto_return = false
 	add_child_autofree(level)
 	level.set_physics_process(false)

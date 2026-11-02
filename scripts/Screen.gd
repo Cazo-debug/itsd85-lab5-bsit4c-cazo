@@ -103,8 +103,9 @@ func build_menu() -> void:
 			for entry: Array in [["Play", "CrewSetup"], ["Avatar", "AvatarCreator"], ["Settings", "Settings"], ["Credits", "Credits"]]:
 				button(entry[0], open_avatar if entry[1] == "AvatarCreator" else go.bind(entry[1]))
 		"ModeSelect":
-			content.add_child(label("Legacy solo prototype\nThe shared-ring course arrives in Phase 2"))
-			button("Play legacy Level 1", play_level_one)
+			content.add_child(label("Sky Garden\nOne ring. Reach the summit together!"))
+			button("Start Sky Garden", launch_sky.bind(false))
+			button("Practice", launch_sky.bind(true))
 			button("Crew setup", go.bind("CrewSetup"))
 			if not GameState.last_result.is_empty():
 				var result: Dictionary = GameState.last_result
@@ -230,7 +231,7 @@ func refresh_creator_preview() -> void:
 func build_crew() -> void:
 	content.add_theme_constant_override("separation", 12)
 	content.add_child(label("ONE RING. YOUR CREW.", 44))
-	content.add_child(label("Shared-ring play arrives in Phase 2", 28))
+	content.add_child(label("A winding waterpark above the clouds", 28))
 	build_preview(220)
 	var seats: GridContainer = GridContainer.new()
 	seats.columns = 2
@@ -265,8 +266,12 @@ func build_crew() -> void:
 	options.add_child(actions)
 	button("Edit rider", edit_crew_profile, actions)
 	button("Make leader", make_leader, actions)
-	options.add_child(label("Scroll for rider options. Assistants move in Phase 2.\nThe leader chooses the shared ring style.", 28))
-	button("Modes / legacy prototype", go.bind("ModeSelect"))
+	button("Control this seat", control_selected_seat, options)
+	options.add_child(label("Scroll for rider options. Assistants steer with you.\nThe leader chooses the shared ring style.", 28))
+	var play_row: HBoxContainer = HBoxContainer.new()
+	content.add_child(play_row)
+	button("Start Sky Garden", launch_sky.bind(false), play_row).add_theme_font_size_override("font_size", 28)
+	button("Practice", launch_sky.bind(true), play_row).add_theme_font_size_override("font_size", 28)
 	button("Back", back)
 	refresh_crew()
 
@@ -385,3 +390,29 @@ func build_preview(minimum_height: float) -> void:
 	rim.position.y = -0.35
 	rim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	viewport.add_child(rim)
+
+func control_selected_seat() -> void:
+	if GameState.crew_slots[selected_seat].control != "local":
+		crew_status.text = "Set this seat to Local rider first."
+		return
+	GameState.active_local_seat = selected_seat
+	crew_status.text = "You control seat %d with aim + hold." % (selected_seat + 1)
+
+func launch_sky(practice: bool) -> void:
+	if not GameState.has_crew():
+		if crew_status:
+			crew_status.text = "Add a rider before launching."
+		return
+	var locals: Array[int] = []
+	for index: int in range(4):
+		if GameState.crew_slots[index].control == "local":
+			locals.append(index)
+	if locals.is_empty():
+		if crew_status:
+			crew_status.text = "Choose at least one Local rider to steer."
+		return
+	if GameState.active_local_seat not in locals:
+		GameState.active_local_seat = locals[0]
+	GameState.mode = "offline"
+	GameState.current_level = 1
+	get_tree().change_scene_to_file("res://scenes/levels/Practice.tscn" if practice else GameState.level_scene_path(1))

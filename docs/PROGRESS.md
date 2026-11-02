@@ -379,3 +379,150 @@ Validation: canonical/pack mirror equality, Phase 2 boundary/gate checks,
 crossbar scope consistency and Git whitespace checks. No application tests
 rerun: executable files are unchanged. The prior 34 tests / 760 assertions
 remain Phase 1 evidence only. All Phase 2 gates remain unchecked.
+
+
+---
+
+# Revised Phase 2 implementation - 2026-11-02
+
+Implemented the user's authorized Phase 2. Main Menu -> Play -> Crew Setup ->
+Start Sky Garden now launches the new shared-ring environment, not the old solo
+course. Practice is beside Start and uses the same connected geometry without
+a time limit, with explicit section reset points. No Phase 3/4/5 execution.
+
+## Delivered behavior
+
+- One physical `SwimRing` with 1-4 saved riders, leader style, full vertical/yaw/
+  pitch/roll motion, damped four-point water support, gravity, drift and per-seat
+  off-centre forces. `RingPhysicsProfile` contains the tuning constants.
+- Camera-relative held thrust, independent gas, release/rearm after depletion,
+  pooled jets opposite the actual push, surface ripples and start/stop feedback
+  signals for later attack/loop/release audio. Four keyboard bindings and
+  cooperative assistants use the same validated `set_thrust_input` contract.
+- Separate touch IDs, aim deadzone, outside release, focus/pause/Back/fall/finish
+  cleanup. Fixed the centered-aim stale-thrust edge case during validation.
+- Original 532.70 m Sky Garden: cloud launch, S-bends, curved narrow bridge,
+  climb/crest, >=150-degree hairpin, descent/dip, obstacle garden and finish.
+  The 4.8 m hull passes the 7.2 m minimum channel with 1.2 m clearance per side.
+  Physical runs gain over 11 m between their low/high points; slopes stay below
+  15 degrees. Path tangents, widths, projection and ribbon boundary crossings
+  are tested against production geometry.
+- Generated ribbon water, green rims, deep coral striped cliffs, clouds/islets
+  and simplified matching bank collision use the same sampled route frames.
+  Orange-rimmed openings have open shafts and no surface support. The right
+  bridge edge is intentionally exposed.
+- Six hazard types: two bumpers, local current, rotating sweeper, swinging
+  mallet, timed spiked crossbar and two holes. Motion uses `Level.race_time`.
+  Ordinary solids push/tip; holes and exposed edges cause whole-crew falls.
+- Two ordered checkpoints, a whole-ring finish threshold, group beans, timed
+  cooperative result, pause/retry/recover and existing best-time/star saving.
+  Timeout disables pending recovery; practice never advances campaign saves.
+
+## Decisions and scope
+
+The time budget is 240 seconds, tuned against legal-input runs of 119.83-146.57
+seconds rather than an assumed reference-video speed. Human feel/time fairness
+still needs review. One cylindrical convex hull matches the platform-bearing
+ring; four independent support points produce physical lean/tilt. The water is
+query-based buoyancy, not a solid floor, so holes really remove support.
+
+To retain regression coverage, the old `RaceLevel` is isolated in `LegacyLevel`
+and `scenes/legacy/LegacyLevel01.tscn`, using `LevelDefs.LEGACY_LEVELS`. Existing
+legacy tests keep their assertions. New `SkyLevel`, `CurvedCourse`, `RouteCamera`
+and `CrewHUD` serve production `Level01.tscn`; replacing old builder internals
+would have conflated two different geometry/control contracts. `FloatPlayer`
+and its legacy API remain only for those fixtures. Normal menu play contains
+one `SwimRing` and no opponent. New campaign data uses `LevelDefs.LEVELS`.
+
+The single prototype route keeps a shared ribbon mesh rather than prematurely
+splitting its small mesh into draw-call-heavy chunks. Baked rider geometry and
+batched scenery keep measured geometry/draw counts under the desktop budgets.
+Longer campaign routes can add spatial chunking in their own phase. No downloaded
+models, textures, sounds or new dependencies were added. Sound playback remains
+Phase 5; signals provide its lifecycle hooks.
+
+## Automated and rendered evidence
+
+`tools/run_tests.sh`: **49 tests / 2,249 assertions / 12 suites pass**, retaining
+all 34 prior tests. New coverage includes input lifecycle/deadzone, four-seat gas,
+short/held/repeated thrust, depletion, off-centre torque, real mallet collision,
+actual gravity drops, current/downhill motion without thrust, assistant release,
+route continuity/clearance/self-intersection, local support/holes, deterministic
+hazards, ordered finish, practice isolation and pause/timeout during a fall.
+
+Legal-input completion matrix, seed 1 (no transform movement after spawn):
+
+| Occupied riders | Finish seconds | Contacts | Falls/recoveries | Beans |
+|---|---:|---:|---:|---:|
+| 1 | 146.57 | 1 | 0 | 10 |
+| 2 | 132.18 | 3 | 0 | 10 |
+| 3 | 123.60 | 2 | 0 | 10 |
+| 4 | 119.85 | 2 | 0 | 10 |
+
+All crossed both checkpoints and the cooperative finish. One-rider seed 1 at
+30 and 120 render FPS produced identical 146.5667 s completion and 114.733339
+force-seconds. Additional four-rider seed 2 completed in 119.83 s with two
+contacts, no recovery and 9.70-degree peak tilt. These are deterministic
+scripted drivers, not human playtests or proof of every possible input sequence.
+
+The new hole/edge/recovery verifier passes headless and rendered: two whole-crew
+recoveries, no stale input, continuing run clock and hidden water effects during
+falls. A controlled mallet placement creates an actual body contact and
+38.09-degree peak tilt. These placement fixtures are explicitly separate from
+no-teleport solvability runs. Capture verification resumes itself if desktop
+focus pauses the fixture; normal focus-loss pause is independently tested.
+
+`verify_crew.gd` passed actual Play -> Crew -> Start Sky Garden -> Back -> Practice
+navigation, four selected riders/one body, section reset and empty-crew launch
+blocking, plus existing profile/back/layout checks. Portrait captures preserve
+Phase 1 evidence under their original filenames. Existing baseline verifier also
+passed before cutover (1,874 checks, 16.77 s, eight beans, three stars).
+
+Fresh evidence is `docs/screenshots/phase2_v3_before_*` and `phase2_v3_*`:
+overview, S-bend, bridge, climb, high hairpin, descent, obstacles, holes, finish,
+result, hole fall, checkpoint recovery, edge fall and mallet contact.
+`export/TootTubes-phase2-sky-garden-demo.mp4` is an uninterrupted scripted
+four-seat run: 720 x 1280, H.264, 30 FPS, 3,743 frames / 124.77 seconds.
+Decoded start/middle/end samples were checked. Raw capture frames and exports
+stay ignored. Capture/encoding wall time is not representative FPS.
+
+Earlier non-recording desktop full-run sample on Intel UHD Graphics,
+Compatibility, 720 x 1280: median 16.671 ms / p95 17.638 ms, maximum 67 draw calls
+and 50,110 visible primitives. Recording run maximum: 67 calls / 50,114 primitives;
+its 25.026/47.881 ms timings include disk capture and are not performance claims.
+Final non-recording seed 3 desktop run: **119.82 s**, two contacts, no recovery,
+median **16.667 ms**, p95 **17.315 ms**, maximum **67 draw calls / 50,114 primitives**
+on the same Intel UHD/Compatibility/720 x 1280 setup. This includes moving
+camera, jets and ordinary contacts; fall/38-degree mallet fixtures are separately
+verified, not included in that completion-run frame distribution.
+
+## Android artifact and remaining acceptance
+
+`export/TootTubes-phase2-sky-garden-debug.apk`: version **0.4-sky-garden / code 6**,
+**57,842,511 bytes**, package `com.itsd85.toottubes.prototype`, minimum API 24.
+Export succeeded and apksigner verified v2/v3 signatures. Archive checks confirm
+SwimRing, CoursePath, CurvedCourse, Practice and route shader resources; reference
+video/pack, tests, tools, documentation and credentials are excluded. Old APKs
+remain separate. `adb devices` listed no connected phone.
+
+Human completion, mobile touch/Back/upgrade behavior, sustained frame pacing and
+heat on real phones remain pending. Desktop captures/counters do not satisfy
+those gates. Full LAN, more campaign courses and finished audio remain later
+phases. User edits to `project.godot`, the reference video and untracked pack
+HTML/images are preserved outside this phase commit.
+
+## Revised Gate 2
+
+- [x] All new/migrated tests pass; one physical ring in the playable scene.
+- [x] Actual menu actions launch new Sky Garden and Practice with saved crew.
+- [x] Four independent inputs, short/held/repeated thrust and per-seat gas verified.
+- [x] Production curves, S-bends, hairpin, narrow route, climb, descent and dip verified.
+- [x] Seven connected sections, six hazard types, two bumpers/holes/checkpoints.
+- [x] Physical contact/tilt and whole-crew hole/edge recovery verified.
+- [ ] Human camera/control readability and actual mobile release acceptance.
+- [ ] Human-played completion; desktop profiling portion is recorded above.
+- [ ] Real-phone install, touch, portrait, frame pacing and heat.
+- [x] Before/after captures, uninterrupted scripted recording, guide and phase commit.
+
+Commit message: `Phase 2: four-rider ring, curved terrain and cooperative obstacles`.
+Run/manual steps: [PHASE2_SKY_GARDEN_TESTING.md](PHASE2_SKY_GARDEN_TESTING.md).
