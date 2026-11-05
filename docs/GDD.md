@@ -1,13 +1,13 @@
 # Toot Tubes - Game Design Document
 
-Status: Phases 1-3 implemented, updated 2026-11-05; laptop checks pass, human play and real-phone acceptance deferred. Main Play configures one shared physical ring; Courses opens the five-course offline campaign. Practice remains untimed. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
+Status: Phases 1-4 implemented, updated 2026-11-05; laptop checks pass, human play and real-phone acceptance deferred. Main Play opens Offline/Host/Join selection; Courses opens the five-course offline campaign. Practice remains untimed. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
 
 | Area | Implemented baseline | v3 target still pending |
 |---|---|---|
-| Riders and saves | Four profiles, validated seats/owners, profile-0 avatar alias, version-2 saves and original-file migration backup | Network-owned rider seats |
-| Preview and navigation | One ring with four rider anchors, saved profiles/leader style, active assistants and four local controller bindings | Four-phone LAN in Phase 4 |
-| Course and movement | Five original courses, one physical ring, sustained gas, curved/elevated terrain, gates/crushers/boulders/whirlpools, progression and complete offline flow | Four-phone LAN and Phase 5 presentation/audio polish |
-| Validation | 70 tests, 45 campaign solvability cases, ordered UI campaign, fresh-process reload and rendered portrait checks | Human play, real-phone and airplane-mode acceptance |
+| Riders and saves | Four profiles, validated local/network seats, version-2 migration and online/offline storage isolation | Physical-phone relaunch acceptance |
+| Preview and navigation | One-ring four-slot lobby, ready/course/start/leave, creator/crew and offline controller bindings | Four-phone human/wireless acceptance |
+| Course and movement | Five courses, host-only LAN ring physics, interpolated guests, sustained gas, curved/elevated terrain, progression and shared results/rematch | Phone LAN validation and Phase 5 presentation/audio polish |
+| Validation | 78 tests, 128 process-based network checks; retained 45 campaign cases, ordered UI campaign, fresh reload and rendered portrait evidence | Human play, real-phone and airplane-mode acceptance |
 
 ## 1. Title and pitch
 
@@ -33,7 +33,7 @@ Phase 2's revised delivery requires those core shapes in playable Sky Garden its
 
 ## 6. Modes and multiplayer
 
-One ring in every mode. Offline offers a local rider and configurable cooperative seat assistants; the four-slot architecture also supports local development controllers. Phase 4 connects two to four phones to owned seats on the same host-simulated ring via ENet/LAN. Four-human co-op is required, not a separate competitive mode. Guest departure clears its held input; host loss returns guests safely to Mode Select. Networking remains unimplemented today.
+One ring in every mode. Offline offers a local rider and configurable cooperative seat assistants; the four-slot architecture also supports local development controllers. Phase 4 implements two-to-four-peer owned seats on the same host-simulated ring via ENet/LAN, port 7777, with laptop process validation. Four-human phone acceptance remains required. Guests submit validated aim/held state and interpolate the host's 3D pose, velocities, gas and run state. Guest departure releases input and vacates its seat; host loss or connection timeout returns guests to Mode Select with an explanation. The host controls start/recovery/resume/rematch; every peer sees one result. Online crew and results never replace offline profiles or advance progression.
 
 ## 7. Characters and customization
 

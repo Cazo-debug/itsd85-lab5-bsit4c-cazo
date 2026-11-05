@@ -100,7 +100,7 @@ func build_menu() -> void:
 			button("Tap to start", start)
 		"MainMenu":
 			content.add_child(label("Ahoy, %s!" % GameState.avatar.get("name", "Player")))
-			for entry: Array in [["Play", "CrewSetup"], ["Courses", "LevelSelect"], ["Avatar", "AvatarCreator"], ["Settings", "Settings"], ["Credits", "Credits"]]:
+			for entry: Array in [["Play", "ModeSelect"], ["Courses", "LevelSelect"], ["Avatar", "AvatarCreator"], ["Settings", "Settings"], ["Credits", "Credits"]]:
 				button(entry[0], open_avatar if entry[1] == "AvatarCreator" else go.bind(entry[1]))
 		"ModeSelect":
 			content.add_child(label("Sky Garden\nOne ring. Reach the summit together!"))

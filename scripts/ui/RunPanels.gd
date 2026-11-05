@@ -60,3 +60,19 @@ func show_result(result: Dictionary, course: String, next_available: bool) -> vo
 		actions.append(["Retry saving", "save"])
 	actions.append(["Menu", "menu"])
 	show_panel("Crew complete!" if result.won else "Time's up", detail, actions)
+
+func show_online_pause(host: bool) -> void:
+	var actions: Array[Array] = []
+	if host:
+		actions.append(["Resume crew", "resume"])
+		actions.append(["Restart together", "retry"])
+	actions.append(["Leave crew", "menu"])
+	show_panel("Crew paused", "The host resumes the shared clock.\nOffline progress stays unchanged.", actions)
+
+func show_online_result(result: Dictionary, course: String, host: bool) -> void:
+	var actions: Array[Array] = []
+	if host:
+		actions.append(["Rematch together", "retry"])
+		actions.append(["Return crew to lobby", "lobby"])
+	actions.append(["Leave crew", "menu"])
+	show_panel("Crew complete!" if result.get("won", false) else "Time's up", "%s\n%.1f s | %d stars | %d recoveries\nOne shared result. Offline progress unchanged.%s" % [course, result.get("time", 0.0), result.get("stars", 0), result.get("recoveries", 0), "" if host else "\nWaiting for the host."], actions)

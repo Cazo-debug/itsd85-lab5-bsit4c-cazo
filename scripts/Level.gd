@@ -22,8 +22,10 @@ var pickups_collected: int = 0
 var practice_index: int = 0
 var result: Dictionary = {}
 var settings_save_error: Error = OK
+var online: bool = false
 
 func _ready() -> void:
+	online = Net.active and Net.phase == "loading"
 	if practice:
 		level_number = clampi(GameState.current_level, 1, LevelDefs.LEVELS.size())
 	definition = LevelDefs.LEVELS[clampi(level_number, 1, LevelDefs.LEVELS.size()) - 1]
@@ -35,11 +37,14 @@ func _ready() -> void:
 	SkyEnvironment.install(self)
 	var profiles: Array[Dictionary] = GameState.local_profiles.duplicate(true)
 	var crew: Array[Dictionary] = CrewData.sanitize_slots(GameState.crew_slots, profiles)
-	if not GameState.has_crew():
+	if online:
+		profiles = Net.profiles.duplicate(true)
+		crew = Net.crew_slots()
+	elif not GameState.has_crew():
 		profiles[0] = AvatarData.default_avatar()
 		crew = CrewData.default_slots()
 	player = preload("res://scenes/actors/SwimRing.tscn").instantiate() as SwimRing
-	player.setup(course.path, profiles, crew, GameState.leader_profile)
+	player.setup(course.path, profiles, crew, 0 if online else GameState.leader_profile)
 	add_child(player)
 	camera = RouteCamera.new()
 	camera.ring = player
@@ -49,7 +54,8 @@ func _ready() -> void:
 	add_child(hud)
 	hud.controls.ring = player
 	hud.controls.camera = camera
-	hud.controls.active_seat = GameState.active_local_seat
+	hud.controls.active_seat = Net.local_seat() if online else GameState.active_local_seat
+	hud.controls.networked = online
 	hud.back_requested.connect(return_to_menu)
 	hud.pause_requested.connect(toggle_pause)
 	hud.reset_requested.connect(recover)
@@ -61,9 +67,20 @@ func _ready() -> void:
 	player.recovered.connect(hud.controls.clear)
 	player.recovered.connect(camera.snap)
 	player.thrust_started.connect(mark_tutorial_seen)
+	if online:
+		brain.enabled = false
+		if not Net.hosting:
+			player.remote_replica = true
+			player.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+			player.collision_layer = 0
+			player.collision_mask = 0
+		Net.attach_level(self)
 	hud.present(run_snapshot())
 
 func _physics_process(delta: float) -> void:
+	if online and (not Net.run_ready or not Net.hosting):
+		hud.present(run_snapshot())
+		return
 	state_time += delta
 	match state:
 		State.INTRO:
@@ -92,6 +109,7 @@ func _physics_process(delta: float) -> void:
 	hud.present(run_snapshot())
 
 func run_snapshot() -> Dictionary:
+	var local_seat: int = Net.local_seat() if online else GameState.active_local_seat
 	var section: String = definition.sections[0][1]
 	for item: Array in definition.sections:
 		if player.route_s / course.path.length >= item[0]:
@@ -106,13 +124,15 @@ func run_snapshot() -> Dictionary:
 		"falling": player.falling, "sound": GameState.settings.sound, "result": result.duplicate(),
 		"settings_save_error": settings_save_error,
 		"next_available": CampaignFlow.next_level(GameState, result) > 0,
-		"hint": CourseHints.for_run(course.path, player.route_s, player.gas[clampi(GameState.active_local_seat, 0, 3)], player.falling)}
+		"online": online, "host": Net.hosting if online else true,
+		"waiting": online and not Net.run_ready,
+		"hint": CourseHints.for_run(course.path, player.route_s, player.gas[clampi(local_seat, 0, 3)], player.falling)}
 
 func begin_run() -> void:
 	state = State.RACING
 	state_time = 0
-	player.simulate = true
-	player.freeze = false
+	player.simulate = not online or Net.hosting
+	player.freeze = not player.simulate
 	player.sleeping = false
 	hud.controls.enabled = true
 	hud.controls.clear()
@@ -153,9 +173,18 @@ func end_run(success: bool) -> void:
 	hud.controls.clear()
 	brain.enabled = false
 	result = CampaignFlow.finish(GameState, level_number, race_time, time_limit, success, player.recoveries, practice)
+	if online:
+		result.online = true
+		Net.publish(true)
 	hud.present(run_snapshot())
 
 func toggle_pause() -> void:
+	if online:
+		Net.request_action("rematch" if state == State.FINISHED else "pause")
+		return
+	toggle_pause_authority()
+
+func toggle_pause_authority() -> void:
 	if state == State.FINISHED:
 		restart_run()
 		return
@@ -165,9 +194,10 @@ func toggle_pause() -> void:
 	state = State.PAUSED if paused else State.RACING
 	player.simulate = not paused
 	player.freeze = paused
+	player.release_all_inputs()
 	hud.controls.enabled = not paused
 	hud.controls.clear()
-	brain.enabled = not paused
+	brain.enabled = not paused and not online
 	hud.present(run_snapshot())
 
 func mark_tutorial_seen(_seat: int) -> void:
@@ -176,6 +206,10 @@ func mark_tutorial_seen(_seat: int) -> void:
 		GameState.save_progress(GameState.persistence_path)
 
 func handle_action(action: String) -> void:
+	if online and action != "sound":
+		var intent: String = {"resume": "pause", "retry": "rematch", "menu": "leave"}.get(action, action)
+		Net.request_action(intent)
+		return
 	match action:
 		"resume":
 			if state == State.PAUSED:
@@ -202,11 +236,20 @@ func handle_action(action: String) -> void:
 				hud.present(run_snapshot())
 
 func restart_run() -> void:
+	if online:
+		Net.request_action("rematch")
+		return
 	player.release_all_inputs()
 	brain.enabled = false
 	get_tree().reload_current_scene()
 
 func recover() -> void:
+	if online:
+		Net.request_action("recover")
+		return
+	recover_authority()
+
+func recover_authority() -> void:
 	if state != State.RACING:
 		return
 	if practice:
@@ -221,6 +264,9 @@ func recover() -> void:
 	previous_s = player.route_s
 
 func return_to_menu() -> void:
+	if online:
+		Net.request_action("leave")
+		return
 	leave_scene("res://scenes/ui/CrewSetup.tscn")
 
 func leave_scene(destination: String) -> void:

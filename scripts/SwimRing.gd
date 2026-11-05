@@ -22,6 +22,8 @@ var firing: Array[bool] = [false, false, false, false]
 var depleted: Array[bool] = [false, false, false, false]
 var rested: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var simulate: bool = false
+var remote_replica: bool = false
+var remote_playing: bool = false
 var falling: bool = false
 var fall_time: float = 0.0
 var unsupported_time: float = 0.0
@@ -306,11 +308,12 @@ func respawn_at_checkpoint() -> void:
 
 func _process(delta: float) -> void:
 	var pose: Transform3D = get_global_transform_interpolated()
-	visual.animate_riders(firing if simulate and not falling else quiet_firing, orbit_motion if simulate and not falling else quiet_motion, delta)
+	var presenting: bool = simulate or (remote_replica and remote_playing)
+	visual.animate_riders(firing if presenting and not falling else quiet_firing, orbit_motion if presenting and not falling else quiet_motion, delta)
 	for index: int in range(jets.size()):
 		jets[index].global_position = pose * orbit.offset(index, 1.70, 0.44)
 		jets[index].direction = -aim[index] + Vector3.UP * 0.15
-		jets[index].emitting = firing[index] and simulate and not falling
+		jets[index].emitting = firing[index] and presenting and not falling
 		var active: bool = jets[index].emitting and held[index]
 		if active != feedback_active[index]:
 			feedback_active[index] = active
@@ -326,7 +329,7 @@ func _process(delta: float) -> void:
 		var velocity: Vector3 = linear_velocity.slide(frame.normal)
 		spray.global_position = Vector3(at.x, frame.height + 0.12, at.z) - velocity.normalized() * 2.3
 		spray.direction = (-velocity.normalized() + Vector3.UP * 1.4).normalized()
-		spray.emitting = ripple.visible and simulate and velocity.length() > 2.0
+		spray.emitting = ripple.visible and presenting and velocity.length() > 2.0
 
 func _on_contact(_body: Node) -> void:
 	contact_count += 1

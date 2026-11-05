@@ -101,6 +101,10 @@ func present(view: Dictionary) -> void:
 	controls.visible = view.state not in ["PAUSED", "FINISHED"]
 	pause_button.text = "Resume" if view.state == "PAUSED" else ("Again" if view.state == "FINISHED" else "Pause")
 	reset_button.text = "Next area" if view.practice else "Recover"
+	var online: bool = view.get("online", false)
+	var host: bool = view.get("host", true)
+	pause_button.disabled = online and not host and view.state in ["PAUSED", "FINISHED"]
+	reset_button.disabled = online and not host
 	for index: int in range(4):
 		var seat: Dictionary = view.crew[index]
 		if not seat.occupied:
@@ -110,7 +114,7 @@ func present(view: Dictionary) -> void:
 		seats[index].modulate = Color("ffcf50") if seat.firing else Color.WHITE
 	banner.visible = view.state in ["INTRO", "COUNTDOWN"] or view.falling or (view.state == "RACING" and view.race_time < 0.8)
 	if view.state == "INTRO":
-		banner.text = view.course.to_upper()
+		banner.text = "WAITING FOR CREW" if view.get("waiting", false) else view.course.to_upper()
 	elif view.state == "COUNTDOWN":
 		banner.text = "READY, CREW?\n%d" % view.countdown
 	elif view.falling:
@@ -121,8 +125,14 @@ func present(view: Dictionary) -> void:
 	if key != panel_key:
 		panel_key = key
 		if view.state == "PAUSED":
-			panels.show_pause(view.sound, view.settings_save_error)
+			if online:
+				panels.show_online_pause(host)
+			else:
+				panels.show_pause(view.sound, view.settings_save_error)
 		elif view.state == "FINISHED":
-			panels.show_result(view.result, view.course, view.next_available)
+			if online:
+				panels.show_online_result(view.result, view.course, host)
+			else:
+				panels.show_result(view.result, view.course, view.next_available)
 		else:
 			panels.hide()

@@ -1,0 +1,107 @@
+extends "res://scripts/Screen.gd"
+
+# Presentation and user intent only. Net owns membership, permissions and lifecycle.
+var message: Label
+var ip_field: LineEdit
+var slot_labels: Array[Label] = []
+var ready_button: Button
+var start_button: Button
+var course_button: Button
+var connection_button: Button
+
+func build_menu() -> void:
+	content.add_child(label("One ring. One crew.", 44))
+	message = label("", 28)
+	content.add_child(message)
+	if screen == "Lobby":
+		build_lobby()
+	else:
+		build_modes()
+
+func build_modes() -> void:
+	message.text = Net.status_message
+	button("Offline crew", go.bind("CrewSetup"))
+	button("Host LAN crew", host_crew)
+	content.add_child(label("Same Wi-Fi / host IP / port 7777", 28))
+	ip_field = LineEdit.new()
+	ip_field.placeholder_text = "Host IP, e.g. 192.168.1.10"
+	ip_field.custom_minimum_size.y = 120
+	ip_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL
+	content.add_child(ip_field)
+	connection_button = button("Join LAN crew", join_crew)
+	var spacer: Control = Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(spacer)
+	button("Back", back)
+	set_process(true)
+
+func build_lobby() -> void:
+	build_preview(220)
+	var slots: GridContainer = GridContainer.new()
+	slots.columns = 2
+	content.add_child(slots)
+	for seat: int in range(4):
+		var item: Label = label("", 28)
+		item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		item.custom_minimum_size = Vector2(280, 80)
+		item.clip_text = true
+		slots.add_child(item)
+		slot_labels.append(item)
+	course_button = button("", cycle_course)
+	ready_button = button("", toggle_ready)
+	start_button = button("Start together", Net.start_run)
+	button("Back / leave crew", back)
+	Net.lobby_changed.connect(refresh_lobby)
+	refresh_lobby()
+
+func host_crew() -> void:
+	if Net.host(GameState.avatar) == OK:
+		go("Lobby")
+	else:
+		message.text = Net.status_message
+
+func join_crew() -> void:
+	if Net.join(ip_field.text, GameState.avatar) != OK:
+		message.text = Net.status_message
+
+func refresh_lobby() -> void:
+	if not Net.active:
+		return
+	var crew: Array[Dictionary] = Net.crew_slots()
+	model.configure(Net.profiles, crew, 0)
+	for seat: int in range(4):
+		var owner: int = Net.owners[seat]
+		slot_labels[seat].text = "%d. Vacant" % (seat + 1) if owner == 0 else "%d. %s\n%s%s" % [seat + 1, Net.profiles[seat].name, "Ready" if Net.ready_peers.get(owner, false) else "Not ready", " (you)" if seat == Net.local_seat() else ""]
+	course_button.text = "Course %d: %s%s" % [Net.course_number, LevelDefs.LEVELS[Net.course_number - 1].name, " / change" if Net.hosting else ""]
+	course_button.disabled = not Net.hosting
+	course_button.add_theme_font_size_override("font_size", 28)
+	ready_button.text = "Ready: %s" % ("Yes" if Net.ready_peers.get(Net.multiplayer.get_unique_id(), false) else "No")
+	start_button.visible = Net.hosting
+	start_button.disabled = not Net.can_start()
+	var addresses: Array[String] = []
+	if Net.hosting:
+		for address: String in IP.get_local_addresses():
+			if address.contains(".") and not address.begins_with("127.") and not address.begins_with("169.254."):
+				addresses.append(address)
+	message.text = ("Host IP: " + ", ".join(addresses) + "\n" if Net.hosting else "Host chooses the course and starts.\n") + "2-4 riders / lost guest seat becomes vacant"
+
+func toggle_ready() -> void:
+	Net.set_ready(not Net.ready_peers.get(Net.multiplayer.get_unique_id(), false))
+
+func cycle_course() -> void:
+	Net.choose_course(Net.course_number % clampi(GameState.unlocked_level, 1, 5) + 1)
+
+func _process(_delta: float) -> void:
+	if screen != "ModeSelect" or not is_instance_valid(connection_button):
+		return
+	var connecting: bool = Net.active and Net.phase == "connecting"
+	connection_button.disabled = connecting
+	connection_button.text = "Connecting..." if connecting else "Join LAN crew"
+	if connecting:
+		message.text = "Connecting to the host... Back cancels."
+
+func back() -> void:
+	if Net.active:
+		Net.leave("You left the crew.")
+	else:
+		go("MainMenu")

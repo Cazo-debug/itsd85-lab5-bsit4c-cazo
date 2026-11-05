@@ -2,7 +2,7 @@
 
 Revised 2026-11-01. Target: Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer.
 
-**Status (2026-11-05): Phases 1-3 implemented with laptop validation.** Five cooperative courses, course locks/results, complete offline navigation and separated UI presentation are available. Human/device and physical airplane-mode checks remain deferred under the user's laptop-first instruction. See `docs/PROGRESS.md`, `docs/PHASE3_TESTING.md` and `docs/UI_LOGIC_BOUNDARIES.md`. Phase 4 has not started.
+**Status (2026-11-05): Phases 1-4 implemented with laptop validation.** Five cooperative courses, offline progression and two-to-four-peer host-authoritative shared-ring LAN are available. Human/device and physical airplane-mode/LAN checks remain deferred under the user's laptop-first instruction; Phase 4's physical-phone gate stays open. See `docs/PROGRESS.md`, `docs/PHASE4_TESTING.md` and `docs/UI_LOGIC_BOUNDARIES.md`. Phase 5 has not started.
 
 The user has replaced the earlier competitive design with **one shared swim ring carrying up to four cooperating riders**, varied curved/elevated courses, repeated directional thrust and many obstacles. This document is the authoritative implementation plan; [ENVIRONMENT_SPEC.md](ENVIRONMENT_SPEC.md) defines geometry, movement and hazard behavior. User instructions take precedence. The old HTML sample is a visual reference, not a source of mandatory gameplay numbers. Previous plans are preserved under `docs/archive/` as historical material only.
 
@@ -247,13 +247,26 @@ Expand the five environment directions above with crushers, moving gates, boulde
 
 Stop after Phase 3. Human/device checks remain open; Phase 4 needs a separate execution instruction.
 
-## Later-phase compatibility requirements (not execution scope)
+## Networking and release requirements
 
 These replace the old competitive tasks so future phases cannot restore the discarded racing design.
 
 ### Phase 4: Two to four phones on one shared ring
 
 First validate host plus one guest, then host plus three guests; four-human co-op is required before Phase 4 is complete. Keep ENet port 7777 with `MAX_CLIENTS = 3`. Host simulates the one ring, hazards and cooperative finish. Guests submit owned-seat aim/thrust state; validate ownership, rate, strength, sequence and gas. Sync full position/orientation, linear/angular velocity, per-seat gas and run state; interpolate guests. Use input expiry plus explicit release so packet loss/disconnect cannot leave thrust stuck on. All seats see the same result; no per-peer winner. The lobby displays one ring with four slots. On guest loss, stop that seat's input and mark it vacant/assist according to the selected policy; host loss returns guests to Mode Select with a clear message. Retain timeout/unreachable-IP handling, rematch/leave, Android network permissions and online progress isolation. Net smoke covers 2 and 4 peers, unauthorized inputs, release loss and disconnects. Real 2-phone and 4-phone tests remain mandatory. Internet backend is optional only after working LAN co-op. Commit `Phase 4: four-player shared-ring LAN co-op`.
+
+Implemented 2026-11-05 following the user's `next` instruction. UI lives in `scripts/ui/NetworkScreen.gd`; session transport/application rules in `Net`, validation in `NetInputGate`, interpolation in `RingReplication`. The selected guest-loss policy is vacant seat, without automatic assistants. See [Phase 4 testing](docs/PHASE4_TESTING.md).
+
+### Gate 4
+
+- [x] One host-authoritative ring, four owned seats, lobby readiness/load barrier and shared result.
+- [x] Two-process then four-process full cooperative course completion; explicit/lost release, spoofed input, pause/rematch, guest/host departure and abrupt host loss.
+- [x] Existing/new tests and `tools/net_smoke.sh` pass; offline files/profiles/progression remain isolated.
+- [x] Rendered laptop lobby/result inspection and Android debug export/signature/permissions verified.
+- [ ] Real two-phone and four-phone co-op, wireless interruption and touch/Back/performance acceptance; deferred by user.
+- [x] Update progress and commit `Phase 4: four-player shared-ring LAN co-op`.
+
+Stop after Phase 4. Its laptop implementation is complete; physical-phone acceptance is still pending. Do not start Phase 5 without a separate execution instruction.
 
 ### Phase 5: Polish and release
 

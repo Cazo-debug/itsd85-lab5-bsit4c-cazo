@@ -1,12 +1,14 @@
 # Toot Tubes
 
-**Updated 2026-11-05: Phase 3 offline campaign implemented.** Five curved, elevated courses share one physical ring and 1-4 cooperating riders. Course locks, cooperative results, Retry/Next/Menu, pause/restart/sound/quit and contextual hints are functional. Laptop checks pass; human play and phone/airplane-mode acceptance are deferred. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
+**Updated 2026-11-05: Phase 4 LAN implemented and checked on the laptop.** Five curved, elevated courses share one physical ring and 1-4 cooperating riders. Two-to-four-peer LAN adds a ready lobby, host-owned simulation, interpolated guests, shared results/rematch and safe disconnect handling. Offline campaign/profiles stay separate. Physical two-phone/four-phone, human play and airplane-mode acceptance remain deferred. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
 
-Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. Courses, riders and scenery use original procedural artwork. LAN and finished audio remain later phases.
+Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. Courses, riders and scenery use original procedural artwork. Finished audio and release polish remain Phase 5.
 
 ## Run the updated game
 
-Open `project.godot` in Godot and press **F5**. Choose **Tap to start -> Play** to configure your crew, then **Start Sky Garden**. First-time players create/save a rider first. **Courses** on Main Menu or **Choose course** in the crew options opens Level Select; finish each course to unlock the next. **Practice** beside Start uses the first course without a timer; **Next area** moves between its seven sections.
+Open `project.godot` in Godot and press **F5**. Choose **Tap to start -> Play -> Offline crew** to configure your crew, then **Start Sky Garden**. First-time players create/save a rider first. **Courses** on Main Menu or **Choose course** in the crew options opens Level Select; finish each course to unlock the next. **Practice** beside Start uses the first course without a timer; **Next area** moves between its seven sections.
+
+For LAN, use **Play -> Host LAN crew** in one copy and **Join LAN crew** in the others. Enter `127.0.0.1` for another copy on this laptop, or the host's displayed Wi-Fi IP from another device. Guests mark Ready and the host starts. Everyone controls their assigned rider on the same ring. Any rider can pause; the host resumes/restarts/recovers. Switching laptop windows can pause the shared run through focus-loss handling. [LAN instructions and checks](docs/PHASE4_TESTING.md).
 
 From PowerShell in this project folder:
 
@@ -31,10 +33,11 @@ Existing version-2 profiles/progress are preserved. Original save migration back
 
 ## Android and verification
 
-Updated build: `export/TootTubes-phase3-campaign-debug.apk` (0.5.0-campaign, code 9). Earlier APKs remain separate. The export folder is intentionally ignored by Git. [Phase 3 QA and reproduction commands](docs/PHASE3_TESTING.md).
+Updated build: `export/TootTubes-phase4-lan-debug.apk` (0.6.0-lan, code 10). Earlier APKs remain separate. The export folder is intentionally ignored by Git. [Phase 4 QA and phone checklist](docs/PHASE4_TESTING.md).
 
 ```powershell
 .\tools\run_tests.ps1
+& 'C:\Program Files\Git\bin\bash.exe' tools/net_smoke.sh
 & .\.bin\Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . --script tools/verify_sky_garden.gd -- --crew=4 --seed=1
 .\tools\run_campaign_checks.ps1 -IncludeAssistants
 ```

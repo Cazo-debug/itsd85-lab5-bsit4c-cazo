@@ -5,6 +5,7 @@ var ring: SwimRing
 var camera: Camera3D
 var active_seat: int = 0
 var enabled: bool = false
+var networked: bool = false
 var stick_id: int = -1
 var gas_id: int = -1
 var stick: Vector2 = Vector2(0, -1)
@@ -28,7 +29,9 @@ func clear() -> void:
 	gas_id = -1
 	keyboard_armed = false
 	last_keyboard_fire = [false, false, false, false]
-	if ring:
+	if networked:
+		Net.release_local()
+	elif ring:
 		ring.release_all_inputs()
 	queue_redraw()
 
@@ -46,10 +49,10 @@ func handle_touch(index: int, point: Vector2, pressed: bool) -> void:
 		if index == gas_id:
 			gas_id = -1
 			if ring:
-				ring.set_thrust_input(active_seat, Vector3.ZERO, 0, false)
+				apply_thrust(active_seat, Vector3.ZERO, 0, false)
 		queue_redraw()
 		return
-	if not enabled or ring == null or not ring.simulate or ring.falling:
+	if not input_available():
 		return
 	if stick_rect().has_point(point) and stick_id < 0:
 		stick_id = index
@@ -79,7 +82,7 @@ func _input(event: InputEvent) -> void:
 		handle_drag(100, event.position)
 
 func _physics_process(_delta: float) -> void:
-	if ring == null or not enabled or not ring.simulate or ring.falling:
+	if not input_available():
 		return
 	var any_fire: bool = false
 	for keys: Array in KEYS:
@@ -88,7 +91,9 @@ func _physics_process(_delta: float) -> void:
 		keyboard_armed = true
 	for binding: int in range(4):
 		var seat: int = active_seat if binding == 0 else binding
-		if ring.seat_control[seat] != "local" or (binding > 0 and seat == active_seat):
+		if networked and binding > 0:
+			continue
+		if (not networked and ring.seat_control[seat] != "local") or (binding > 0 and seat == active_seat):
 			continue
 		var keys: Array = KEYS[binding]
 		var value: Vector2 = Vector2(float(Input.is_physical_key_pressed(keys[1])) - float(Input.is_physical_key_pressed(keys[0])), float(Input.is_physical_key_pressed(keys[3])) - float(Input.is_physical_key_pressed(keys[2])))
@@ -97,9 +102,9 @@ func _physics_process(_delta: float) -> void:
 			if value.length_squared() > 0:
 				stick = value.normalized()
 			var mouse_aim: Vector3 = world_direction(stick)
-			if value.length_squared() > 0 or stick_id >= 0 or gas_id >= 0 or pressed:
+			if not networked and (value.length_squared() > 0 or stick_id >= 0 or gas_id >= 0 or pressed):
 				ring.set_aim_input(seat, mouse_aim)
-			ring.set_thrust_input(seat, mouse_aim if pressed or gas_id >= 0 else Vector3.ZERO, stick.length(), (pressed or gas_id >= 0) and stick.length() >= 0.15)
+			apply_thrust(seat, mouse_aim if networked or pressed or gas_id >= 0 else Vector3.ZERO, stick.length(), (pressed or gas_id >= 0) and stick.length() >= 0.15)
 		elif value.length_squared() > 0 or pressed or last_keyboard_fire[binding]:
 			var direction: Vector3 = world_direction(value) if value.length_squared() > 0 else ring.aim[seat]
 			if direction.length_squared() < 0.001:
@@ -108,6 +113,15 @@ func _physics_process(_delta: float) -> void:
 			ring.set_thrust_input(seat, direction, 1.0, pressed)
 		last_keyboard_fire[binding] = pressed
 	queue_redraw()
+
+func input_available() -> bool:
+	return ring != null and enabled and not ring.falling and (ring.simulate or (networked and Net.active and Net.run_ready))
+
+func apply_thrust(seat: int, direction: Vector3, amount: float, held: bool) -> void:
+	if networked:
+		Net.submit_input(seat, direction, amount, held)
+	else:
+		ring.set_thrust_input(seat, direction, amount, held)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:

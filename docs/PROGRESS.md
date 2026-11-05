@@ -776,3 +776,48 @@ Laptop campaign execution has no service dependency: Net stays idle and Android 
 Stop here. Phase 3 logic/laptop work is complete; manual/device gates remain open. Phase 4 needs a separate execution instruction.
 
 Guides: [PHASE3_TESTING.md](PHASE3_TESTING.md), [UI_LOGIC_BOUNDARIES.md](UI_LOGIC_BOUNDARIES.md).
+
+---
+
+# Phase 4: shared-ring LAN implementation (2026-11-05)
+
+Authorized by the user's `next` instruction after Phase 3, retaining laptop-first validation and deferring physical phones. Phase 4's implementation/laptop checks are complete; its required real two-phone/four-phone acceptance remains open. Phase 5 has not started.
+
+## Implemented behavior and separation
+
+`Net` now uses ENet port 7777 with `MAX_CLIENTS = 3`. Mode Select offers Offline/Host/Join. The lobby shows one ring, four identifiable slots, host IP, course selection, readiness and start/leave. A load barrier starts one common round after every current member has loaded. The host chooses from its unlocked courses; online play cannot unlock the guest's campaign.
+
+The host alone simulates the shared ring, gas, water, hazards, ordered checkpoints and finish. `NetInputGate` validates owned seats, current round, increasing sequence, types, finite direction/strength, strength bounds, rate, gas and run state. Explicit release is reliable; input expires after 350 ms without refresh. `RingReplication` sends/interpolates full 3D pose/orientation, velocities, gas, aim/held/firing/depletion, rider orbit and run state, including clock, pickups and the single cooperative result. Guest bodies stay frozen with collision/engine interpolation disabled. All moving hazards still evaluate only `Level.race_time`.
+
+Any rider may pause/leave; the host resumes, recovers, restarts or returns the crew to lobby. Rematch clears clock, checkpoints, gas/input and replication state; round IDs reject old input/snapshots. The selected guest-loss policy is **vacant seat**, without automatic assistants: immediately release the old seat and remove its rider from the shared preview/body presentation. Host loss, silence or unreachable IP shows an in-game explanation and returns to Mode Select. Connect/load/host-silence limits are 10/15/8 seconds. Normal ENet disconnect detection may finish sooner.
+
+Session profiles/owners remain separate from `GameState.local_profiles` and `crew_slots`; the existing save schema and write/migration logic are unchanged. Online results do not save/unlock progress. Leaving restores the previous offline mode and result. UI sends intents through `Net` or HUD signals; fonts/layout/labels remain in `NetworkScreen`, `CrewHUD`, `RunPanels`, `CrewPadView` and theme files. Network validation and ring physics have no layout responsibilities. See [UI_LOGIC_BOUNDARIES.md](UI_LOGIC_BOUNDARIES.md).
+
+## Validation evidence
+
+- Required `tools/run_tests.sh`: **78 tests / 7,642 assertions / 19 suites, all passing**; `.bin/phase4-final-tests.log`. Existing tests remain intact. New coverage includes hostile/stale/rate/gas input, isolated storage/session lifecycle, actual owned-input adapter release, snapshot interpolation and visible portrait lobby slots/buttons.
+- Required `tools/net_smoke.sh`: **128 checks pass**, separate real processes, first host + 1 guest then host + 3 guests. Final reports: `.bin/phase4-validation/20261105-110145/`, aggregate log `.bin/phase4-final-net-smoke.log`. The runner also rejects engine runtime errors even if process exit is zero.
+- Two-peer Sky Garden: **126.30 s**, two stars, zero recoveries, both ordered checkpoints and identical result on both peers. Four-peer: **119.20 s**, three stars, zero recoveries, both checkpoints, identical result on all four peers and real force contribution from all four seats. Scripted seat drivers use normal sustained input/gas with a 3x clock; they never teleport or refill the body. This is transport/logic evidence, not four-human or wireless acceptance.
+- Network checks also pass forged-seat rejection, explicit release before expiry, dropped release/refresh expiry after observed held input, fresh rematch, shared pause/resume, guest departure/vacancy, host departure, wrong/unreachable connection, and **abrupt host-process kill** returning the guest to Mode Select. Disposable offline save files remain byte-identical across connected play/results/disconnects, and offline mode/prior result are restored.
+- `verify_lan_ui.gd`: **six rendered fixture checks**, visually inspected Mode Select, four-slot lobby and actual online result HUD. `docs/screenshots/phase4_*.png` are presentation fixtures, not network-run proof or performance profiling. Visual inspection caught zero-height lobby slot labels; explicit label dimensions and regression coverage now keep all four visible within the 720 x 1280 layout.
+- Debug export **0.6.0-lan / code 10**, `export/TootTubes-phase4-lan-debug.apk`, **57,915,202 bytes**, ARMv7 + ARM64, minimum API 24 / target 36, v2/v3 signature verified. INTERNET and ACCESS_NETWORK_STATE enabled for LAN; VIBRATE retained. New runtime resources are present; tooling/docs/addons/reference media/signing material excluded. SHA-256 `0039B10532A0487F27BED7E7A3B4461F82390756938D381A60603B1E270676D7`. No physical installation claim.
+
+## Decisions and remaining acceptance
+
+No backend is needed for local ENet co-op. Guests can request a shared pause; only the host resumes/restarts/recovers, avoiding contradictory local clocks or body resets. Guest seats become vacant rather than silently assigning an assistant. These are the simplest policies consistent with one host-owned physical ring and are explained in the lobby/testing guide.
+
+The network fixture identifies riders by their assigned sanitized profile, because process-launch order does not guarantee connection/seat order. Its release-loss deadline uses the actual host receive timestamp plus a physics margin; it does not assume synchronized process frames. Both observed held state and eventual release are required. Initial failing runs are retained in `.bin`; only the final passing evidence above supports acceptance.
+
+No router/firewall settings were changed, no external service was used, and no release/push was performed. The preexisting `project.godot` change, reference video and reference-pack docs remain untouched. New screenshots contain only original procedural game assets. Audio/production release work remains Phase 5. Original lab PDF/rubric alignment is still provisional.
+
+## Gate 4 checklist
+
+- [x] Host-authoritative one-ring LAN, two to four owned rider slots and ready/load barriers.
+- [x] Input ownership/rate/sequence/strength/gas validation, explicit release/expiry and guest interpolation.
+- [x] Shared result, pause/rematch/leave, vacancy policy and clear timeout/host-loss recovery.
+- [x] Existing/new tests, two-process then four-process completion and required net smoke pass.
+- [x] Offline profile/progression/file isolation, portrait presentation and signed debug package verified.
+- [ ] Two physical phones and four physical phones: cooperative controls, wireless interruption, shared finish/rematch, Android Back/touch/performance; deferred by user.
+- [x] Update docs and commit `Phase 4: four-player shared-ring LAN co-op`.
+
+Stop after Phase 4. [PHASE4_TESTING.md](PHASE4_TESTING.md) contains laptop instructions and the remaining device checklist. Physical gates remain open; Phase 5 needs a separate execution instruction.
