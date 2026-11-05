@@ -1,6 +1,6 @@
 # Phase 5: local acceptance and remaining device checks
 
-2026-11-05. Laptop checks plus an authorized TECNO CLA5 session. This is not full release acceptance. One ARM debug phone renders and completes real-time scripted courses; native release/active-held lifecycle, steady 60 FPS, wireless LAN, two performance classes and human playtesting remain pending. No publication was performed.
+2026-11-05. Laptop checks plus an authorized TECNO CLA5 session. This is not full release acceptance. One ARM debug phone renders and completes real-time scripted courses; short native release/drag-out/held-Home checks now pass. Longer native holds, steady 60 FPS, wireless LAN, two performance classes and human playtesting remain pending. No publication was performed.
 
 ## What is tested here
 
@@ -15,11 +15,11 @@
 | Packaging | Android debug/release signatures/resources; embedded Windows EXE; debug APK upgraded code 7 to 11 on the phone with the original save intact | Release APK phone execution and fresh-device installation remain open |
 | Rendering | Portrait captures inspected; four-rider high/low full-course profiling below | Laptop GPU counters do not establish phone FPS or heat |
 | Android emulator continuation | 55 native-control/lifecycle/offline/save checks in a failed-render x86-64 fixture | Flat captures/shader errors; later hardware-backed starts timed out. Overall emulator acceptance remains failed |
-| Physical ARM phone | TECNO CLA5 / Android 15: 129 explicitly scoped checks for rendering, menus, unheld Home/Back, isolated save/relaunch and two real-time four-seat Sky Garden runs | Full native pointer instrumentation times out; final subset skips it explicitly. No airplane-mode, haptic-feel or multi-phone acceptance |
+| Physical ARM phone | TECNO CLA5 / Android 15: prior 129-check subset; later five fresh starts, short two-pointer release and 38 short drag-out/held-Home/resume/Back checks | Long native pointer instrumentation still times out; no passing full runner. No airplane-mode, haptic-feel or multi-phone acceptance |
 | Phone performance | High/low mean 51.63/52.22 FPS, P95 24.759/24.461 ms; both finish in 110.9 s with zero recoveries | One debug phone, short charging-device runs; steady 60 FPS and a second class remain open |
 | QA tools | 14 device-free safeguard tests | Target/foreground/coordinates/reports/log retention; not gameplay on a second phone |
 
-The LAN cases include owned-seat spoof rejection, explicit reliable release, lost-refresh expiry, gas and 3D motion, ordered checkpoints, identical shared results, pause/rematch, vacancy, unreachable host and abrupt host-process death. Offline save files remain byte-identical and prior offline result/mode are restored. The explicit-release fixture waits for the host to observe a real held packet before asking the guest to release; it does not assume identical process frame timing.
+The LAN cases include owned-seat spoof rejection, explicit reliable release, lost-refresh expiry, gas and 3D motion, ordered checkpoints, identical shared results, pause/rematch, vacancy, unreachable host and abrupt host-process death. Offline save files remain byte-identical and prior offline result/mode are restored. Both release fixtures wait for the host to observe a real held packet. The lost-release guest then suppresses refresh/release until the host observes actual expiry and cleared thrust; it does not assume identical process race clocks. A bounded wall-clock handshake still fails if delivery or expiry never occurs.
 
 The later [Android emulator continuation](ANDROID_EMULATOR_TESTING.md) adds actual Android MotionEvent injection and Back/Home/airplane-mode checks, plus strict image/runtime failure detection. Its behavior evidence does not close the Android rendering gate. The separate x86-64 QA export does not replace the ARM phone APKs.
 
@@ -28,8 +28,12 @@ independent ARM debug rendering and real-time course evidence. It found a native
 music-loop PCM overread, repaired with a guard frame while preserving the original
 loop period and samples. Full pointer runs remain failed due to instrumentation
 completion timeouts. Their held-input samples show real force, gas drain and a
-0.75-radian rider orbit change; they do not establish release/drag-out/held-Home
-acceptance. The successful subset reports `native_pointer_tests_passed: false`.
+0.75-radian rider orbit change. A later focused recheck establishes those release,
+drag-out and held-Home behaviors for short 1.8-second sequences, with successful
+instrumentation completion, and five fresh starts. The unchanged 6.5-second
+sequences still hang, including without screenshots. The successful earlier
+subset still reports `native_pointer_tests_passed: false`; the newer focused
+results do not turn the full failed runner into a pass.
 
 Low quality reduces decorative clouds and particle counts. It retains all four riders, route geometry, hazards, collision, mass, gas and cooperative physics. Reduced motion softens camera yaw; there is no impact shake. Preferences persist without changing the version-2 save format.
 

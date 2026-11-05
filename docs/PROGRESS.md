@@ -1075,3 +1075,59 @@ non-silent mixed PCM peaks 0.1039/0.1170; see `.bin/phase5-phone-portable-*.log`
 - [ ] Release-APK execution and publication decision; **Phase 5 remains open**. Nothing was published.
 
 See [PHASE5_PHONE_TESTING.md](PHASE5_PHONE_TESTING.md) for reproduction and scope.
+
+## Phase 5: focused wireless recheck (2026-11-05)
+
+The user's `now check` continues the authorized TECNO CLA5 checks. The installed
+debug APK still matches the patched local build. Five force-stopped fresh
+processes all reached Title; another 18 seconds across two music wraps produced
+responsive telemetry and no new app script errors/native fatal signals. The
+earlier startup stall did not recur, without asserting fresh-device/release
+startup acceptance.
+
+The original helper completes a short 1.8-second native two-pointer hold. Real
+phone telemetry shows force/gas use followed by both IDs clearing, held/firing
+clearing, no further force and gas recovery. A separate **38-check short native
+run passes** HOLD drag-out with AIM retained, final pointer/audio release,
+Home during thrust, paused return, safe Resume and Android Back to Crew Setup.
+Expected success/cancellation instrumentation results were received.
+
+Longer 6.5-second sequences still hang with the unchanged helper, both with and
+without a screenshot. Game telemetry keeps updating with held input while the
+helper has not completed. No blocked-call root cause or long-hold release pass
+is claimed. Failed reports remain beside successful focused reports in ignored
+`.bin/phase5-phone-recheck/`; this is not a passing full native runner. No phone
+game/helper source change, reinstall or new performance profile was needed.
+
+The required laptop rerun exposed another smoke-fixture timing race: the
+lost-release check could expire the preceding explicit release before the guest
+had delivered the new held packet. `tools/net_smoke_peer.gd` now requires a
+host-observed new hold, then guest refresh suppression, then actual host expiry
+and cleared thrust before resuming input. The same release assertion remains;
+an eight-second wall-clock handshake fails missing delivery/expiry. Production
+networking and physics are unchanged. The original failed run is retained at
+`.bin/phase4-validation/20261105-234437/`.
+
+Final reruns pass **86 GUT tests / 7,818 assertions**, **128 LAN checks**
+(two-peer 41, four-peer 75, unreachable 6, host-loss 6) and **14 QA-runner tests**.
+Logs are `.bin/phase5-phone-recheck/gut-final.log` and `net-smoke-fixed.log`;
+separate successful peer reports are in
+`.bin/phase4-validation/20261105-234710/`. No tests were removed or weakened.
+
+Final device verification preserves the original pre-upgrade 924-byte save
+byte for byte (SHA-256
+`5d899fdadb78c42d90d52c74b713dd5558a4939b0a876cc266624f1a42900344`),
+1080 x 2436 / density 480 and Wi-Fi. Temporary QA files/helper were removed;
+the preexisting backup/cache remain and the patched normal game is foreground.
+See [PHASE5_PHONE_TESTING.md](PHASE5_PHONE_TESTING.md) for separate report scopes.
+
+### Gate 5 recheck
+
+- [x] Five fresh debug starts and two music wraps on the authorized phone.
+- [x] Short native two-pointer release, HOLD drag-out, active-held Home/Resume/Back.
+- [x] GUT 86/7,818, LAN 128 and QA-tool 14 regression checks pass.
+- [x] Original normal save/display preserved; temporary QA files/helper removed.
+- [ ] Full native runner and longer held-input release; helper still hangs.
+- [ ] Steady 60 FPS, second phone class, long heat/human-feel checks.
+- [ ] Physical airplane-mode campaign and two/four-phone Wi-Fi co-op/playtests.
+- [ ] Release-APK execution and publication decision; Phase 5 remains open.

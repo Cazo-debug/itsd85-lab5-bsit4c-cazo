@@ -38,6 +38,7 @@ var loss_seat: int = 1
 var departing_seat: int = 1
 var explicit_received_at: int = 0
 var release_race_time: float = -1.0
+var loss_started_at: int = 0
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
@@ -188,6 +189,7 @@ func verify() -> void:
 					release_checked = true
 					check(not net.gate.expired(loss_seat, Time.get_ticks_msec()), "Explicit release stops held thrust before expiry")
 					release_race_time = level.race_time
+					loss_started_at = Time.get_ticks_msec()
 					write_marker("explicit-received.flag", str(release_race_time))
 				elif Time.get_ticks_msec() - round_started_at > 8000:
 					check(false, "Explicit held/release packet handshake timed out")
@@ -206,21 +208,31 @@ func verify() -> void:
 				else:
 					net.submit_input(net.local_seat(), level.course.path.sample(level.player.route_s + 5).tangent, 1.0, true)
 					continue
-			var probe_time: float = level.race_time - release_race_time if release_race_time >= 0 else -1.0
-			if role != "host" and index == 1 and probe_time >= 0 and probe_time < 6:
-				if probe_time < 1:
+			# The host must observe this new hold before the guest stops refreshing.
+			# A race-clock window could expire the preceding explicit release while
+			# a slower guest had not yet delivered the lost-release test's hold.
+			if role != "host" and index == 1 and release_race_time >= 0 and not FileAccess.file_exists(output + "/loss-expired.flag"):
+				if not FileAccess.file_exists(output + "/loss-held.flag"):
 					net.submit_input(net.local_seat(), level.course.path.sample(level.player.route_s + 5).tangent, 1.0, true)
 				elif net.input_enabled:
 					net.send_input()
 					net.input_enabled = false # Deliberately lose the release and all refresh packets.
+					write_marker("loss-muted.flag", "muted")
 				continue
-			if role == "host" and probe_time >= 0 and probe_time < 3:
-				loss_hold_seen = loss_hold_seen or level.player.held[loss_seat]
-			if role != "host" and probe_time >= 6:
+			if role != "host" and index == 1 and FileAccess.file_exists(output + "/loss-expired.flag"):
 				net.input_enabled = true
-			if role == "host" and not expiry_checked and probe_time > 2.5 and probe_time < 5.5 and net.gate.expired(loss_seat, Time.get_ticks_msec() - 80):
-				expiry_checked = true
-				check(loss_hold_seen and not level.player.held[loss_seat], "Lost release expires on host without sticking thrust")
+			if role == "host" and release_checked and not expiry_checked:
+				if not loss_hold_seen and level.player.held[loss_seat]:
+					loss_hold_seen = true
+					write_marker("loss-held.flag", "held")
+				if loss_hold_seen and FileAccess.file_exists(output + "/loss-muted.flag") and net.gate.expired(loss_seat, Time.get_ticks_msec() - 80):
+					expiry_checked = true
+					check(loss_hold_seen and not level.player.held[loss_seat], "Lost release expires on host without sticking thrust")
+					write_marker("loss-expired.flag", "expired")
+				elif Time.get_ticks_msec() - loss_started_at > 8000:
+					check(false, "Lost held/expiry packet handshake timed out")
+					await finish()
+					return
 		else:
 			if role == "host" and pause_at == 0 and level.race_time > 1:
 				pause_at = Time.get_ticks_msec()

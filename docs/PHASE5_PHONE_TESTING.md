@@ -23,9 +23,43 @@ Native injection in earlier failed full runs produced two distinct AIM/HOLD IDs,
 0.4167 seconds of integrated force, gas falling to 95.94%, and a 0.75-radian rider
 orbit change. However, the instrumentation process failed to finish within its
 20-second deadline. The queued-injection experiment also timed out and was
-reverted. Full pointer release, HOLD drag-out and active-held Home cleanup remain
-unaccepted on this phone. The subset flag skips those tests explicitly; it does
-not convert their failed results into passing native-input acceptance.
+reverted. The later focused recheck below verifies short release, HOLD drag-out
+and active-held Home cleanup. Longer native holds still hang; the full runner
+remains failed. The subset flag does not convert that failure into a pass.
+
+## Focused wireless recheck, 2026-11-05
+
+The installed debug APK still matches the patched local candidate byte for byte.
+No game/helper source or APK was changed for these phone checks. Separate local
+reports are retained in `.bin/phase5-phone-recheck/`:
+
+- `startup-01/results.json`: five force-stopped fresh processes all reached
+  Title, followed by 18 seconds of responsive Title telemetry across two music
+  wraps. No app script errors or fatal signals were recorded. The earlier
+  surface/startup stall did not recur in these attempts; fresh-device and release
+  startup acceptance remain open.
+- `pointers-01/results.json`: the original helper completed a 1.8-second two-finger
+  hold and returned `passed=true`. Phone telemetry shows sustained force/gas use,
+  then both pointer IDs returning to -1, no held/firing seats, stopped force
+  accumulation and gas recovery.
+- `short-lifecycle-04/results.json`: **38 checks pass** for short 1.8-second native
+  sequences. Dragging HOLD outside stops thrust while AIM stays owned; final
+  release clears pointers/audio. Home during actual thrust cancels injection,
+  clears input/audio and returns paused. Resume does not restart the previous
+  hold, and Back reaches Crew Setup. Both expected instrumentation results were
+  received. These are short Android-injected checks, not a human finger review.
+- `native-02/results.json` and `pointers-03-no-capture/results.json`: the unchanged
+  6.5-second sequences still fail to finish. Omitting capture does not prevent the
+  hang. Game telemetry continues, but the controls remain held while the helper
+  has not completed. This does not establish the blocked helper call's root
+  cause, long-hold release acceptance or a passing full phone run.
+
+`final-device-state.json` confirms the original 924-byte normal save is identical
+to the pre-upgrade backup, physical size/density remain 1080 x 2436 / 480, temporary
+QA files/helper are removed, and the normal patched game is foreground. The
+preexisting `gate2-save-before.cfg` and shader cache were preserved. No reinstall,
+gameplay patch, Wi-Fi change, new performance profile or release execution was
+performed during this recheck.
 
 ## Real-time debug-build measurements
 
