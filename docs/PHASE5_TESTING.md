@@ -87,6 +87,7 @@ Private release signing material stays outside the repository in the current use
 - [ ] Android install/upgrade, portrait/touch targets, independent two-finger release, Back/Home/resume, saved preferences and vibration.
 - [ ] Physical airplane-mode campaign completion/retry/relaunch; actual two-phone and four-phone Wi-Fi finish/rematch/disconnect.
 - [ ] Human review of steering, camera, water/rider visuals, sound balance and obstacle difficulty.
-- [ ] Release approval/publication and final Phase 5 commit after phase handoff; no release has been published.
+- [x] Phase 5 implementation checkpoint committed as `9513789`; full acceptance stays open.
+- [ ] Release approval/publication; no release has been published.
 
 The original lab rubric PDF is still unavailable; exact rubric alignment remains provisional. Keep the hardware/human gates open.

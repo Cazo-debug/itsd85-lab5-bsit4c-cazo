@@ -126,6 +126,9 @@ func verify() -> void:
 			continue
 		var level: Node3D = net.level
 		level.hud.controls.enabled = false
+		# Snapshots restore the gameplay enabled flag. This fixture owns the
+		# input stream, so the idle UI must not publish competing releases.
+		level.hud.controls.set_physics_process(false)
 		if last_round != net.round_id:
 			last_round = net.round_id
 			print("%s %d loaded round %d" % [role, index, last_round])
@@ -169,6 +172,10 @@ func verify() -> void:
 		if role != "host" and not forged:
 			forged = true
 			net.rpc_id(1, "_input_state", {"seat": 0, "round": net.round_id, "seq": 10000, "direction": Vector3.FORWARD, "strength": 1.0, "held": true})
+			# Also deliver an unowned release reliably. The one-shot unreliable
+			# thrust packet can be superseded by a newer ordinary input packet;
+			# neither forged packet may acquire the host's seat or sequence.
+			net.rpc_id(1, "_release", {"seat": 0, "round": net.round_id, "seq": 10001, "direction": Vector3.FORWARD, "strength": 1.0, "held": false})
 		if net.round_id == 1:
 			# Synchronize on observed packets, not narrow race-clock windows. Guest
 			# interpolation and process scheduling can legitimately lag the host.
@@ -265,7 +272,8 @@ func finish() -> void:
 	if net.active: net.close_session()
 	check(game.mode == "offline" and game.last_result == {"offline": true}, "Leaving restores offline mode and prior result")
 	var report: Dictionary = {"passed": failures.is_empty(), "role": role, "index": index, "players": players,
-		"scenario": scenario, "checks": checks, "failures": failures, "result": first_result}
+		"scenario": scenario, "checks": checks, "failures": failures, "result": first_result,
+		"observed": {"movement": movement_seen, "height": shared_height_seen, "gas": gas_used}}
 	var file: FileAccess = FileAccess.open(output + "/%s-%d.json" % [role, index], FileAccess.WRITE)
 	if file: file.store_string(JSON.stringify(report, "\t")); file.close()
 	for suffix: String in ["", ".tmp", ".pre-v2.bak"]: DirAccess.remove_absolute(save_path + suffix)

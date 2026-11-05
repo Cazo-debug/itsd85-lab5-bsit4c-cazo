@@ -18,6 +18,13 @@ HELPER = 'com.itsd85.toottubes.qa'
 STATE = 'files/phase5_android_state.json'
 
 
+def evidence_directory(args):
+    """Keep each diagnostic attempt's captures, logs and result together."""
+    output = Path(getattr(args, 'output', None) or REPO / '.bin' / 'phase5-android')
+    output.mkdir(parents=True, exist_ok=True)
+    return output
+
+
 @contextmanager
 def emulator_session(args):
     """Boot a read-only session and restore its configuration even on failure."""
@@ -34,8 +41,7 @@ def emulator_session(args):
     base = Path(next(line.split('=', 1)[1].strip() for line in registry.read_text().splitlines() if line.startswith('path=')))
     config = base / 'config.ini'
     original = config.read_bytes()
-    output = REPO / '.bin' / 'phase5-android'
-    output.mkdir(exist_ok=True)
+    output = evidence_directory(args)
     (output / 'emulator-original-config.ini').write_bytes(original)
     text = original.decode('utf8')
     for key, value in {'hw.lcd.width': '720', 'hw.lcd.height': '1280', 'hw.lcd.density': '240',
@@ -85,8 +91,7 @@ class AndroidChecks:
     def __init__(self, args):
         self.args = args
         self.adb = str(Path(args.sdk) / 'platform-tools' / 'adb.exe')
-        self.output = REPO / '.bin' / 'phase5-android'
-        self.output.mkdir(exist_ok=True)
+        self.output = evidence_directory(args)
         self.checks = []
         self.samples = []
         self.component = ''
@@ -225,18 +230,20 @@ class AndroidChecks:
         self.command('shell', 'settings', 'put', 'system', 'user_rotation', '0')
         self.command('shell', 'input', 'keyevent', '82')
         self.command('install', '-r', self.args.apk, timeout=90)
-        helper = REPO / '.bin/gate2-touch/gate2-touch.apk'
-        result = self.command('install', '-r', helper, check=False, timeout=60)
-        if 'INSTALL_FAILED_UPDATE_INCOMPATIBLE' in result:
-            self.command('uninstall', HELPER)  # Test helper only. Never uninstall the game.
-            result = self.command('install', helper, timeout=60)
-        self.check('Success' in result, 'Test-only native two-pointer helper installed')
         resolved = self.command('shell', 'cmd', 'package', 'resolve-activity', '--brief', PACKAGE)
         self.component = next(line.strip() for line in resolved.splitlines() if line.strip().startswith(PACKAGE + '/'))
         self.command('logcat', '-c')
         state = self.start(reset=True)
         self.check(state['normal_save_unchanged'] and state['net_phase'] == 'idle', 'Offline QA startup preserves normal save and opens no connection')
         self.capture('title')
+        if getattr(self.args, 'startup_only', False):
+            return
+        helper = REPO / '.bin/gate2-touch/gate2-touch.apk'
+        result = self.command('install', '-r', helper, check=False, timeout=60)
+        if 'INSTALL_FAILED_UPDATE_INCOMPATIBLE' in result:
+            self.command('uninstall', HELPER)  # Test helper only. Never uninstall the game.
+            result = self.command('install', helper, timeout=60)
+        self.check('Success' in result, 'Test-only native two-pointer helper installed')
         self.tap('Tap to start')
         self.scene('MainMenu')
         self.tap('Settings')
@@ -322,38 +329,51 @@ def main():
     parser.add_argument('--memory', type=int, choices=(1024, 1536, 2048), default=1024)
     parser.add_argument('--sdk', default=str(Path(os.environ['LOCALAPPDATA']) / 'Android/Sdk'))
     parser.add_argument('--apk', default=str(REPO / '.bin/phase5-emulator-x86_64.apk'))
+    parser.add_argument('--output', type=Path, help='Evidence directory for this attempt; default: .bin/phase5-android')
+    parser.add_argument('--startup-only', action='store_true', help='Check startup/rendering only; skip native helper and gameplay')
     args = parser.parse_args()
     run = AndroidChecks(args)
     passed = False
+    failure = None
     (run.output / 'results.json').write_text(json.dumps({'passed': False, 'checks': [], 'stage': 'startup'}), encoding='utf8')
-    with emulator_session(args):
-        try:
-            run.run()
-            passed = True
-        finally:
-            if run.safe_target:
-                if not passed:
-                    try:
-                        screen = run.command('exec-out', 'screencap', '-p', binary=True, timeout=10)
-                        if screen.startswith(b'\x89PNG'):
-                            (run.output / 'failure.png').write_bytes(screen)
-                    except (RuntimeError, subprocess.TimeoutExpired):
-                        pass
-                log = run.command('logcat', '-d', '-v', 'threadtime', check=False)
-                (run.output / 'logcat.txt').write_text(log, encoding='utf8')
-                errors = [line for line in log.splitlines() if (' E godot ' in line and ('ERROR:' in line or 'SCRIPT ERROR:' in line)) or 'FATAL EXCEPTION' in line]
-                if errors:
-                    run.checks.append({'passed': False, 'message': 'Android runtime log contains errors', 'errors': errors})
-                    passed = False
-                run.command('shell', 'am', 'force-stop', PACKAGE, check=False)
-                run.command('shell', 'am', 'force-stop', HELPER, check=False)
-                run.command('shell', 'run-as', PACKAGE, 'rm', '-f', 'files/phase5_android_check.flag', check=False)
-            report = {'passed': passed, 'serial': args.serial, 'apk_sha256': hashlib.sha256(Path(args.apk).read_bytes()).hexdigest(),
-                      'checks': run.checks, 'samples': run.samples, 'scope': 'Android emulator; native synthetic pointers; separate accelerated scripted solvability mode; no physical-phone or performance acceptance'}
-            (run.output / 'results.json').write_text(json.dumps(report, indent=2), encoding='utf8')
+    try:
+        with emulator_session(args):
+            try:
+                run.run()
+                passed = True
+            finally:
+                if run.safe_target:
+                    if not passed:
+                        try:
+                            screen = run.command('exec-out', 'screencap', '-p', binary=True, timeout=10)
+                            if screen.startswith(b'\x89PNG'):
+                                (run.output / 'failure.png').write_bytes(screen)
+                        except (RuntimeError, subprocess.TimeoutExpired):
+                            pass
+                    log = run.command('logcat', '-d', '-v', 'threadtime', check=False)
+                    (run.output / 'logcat.txt').write_text(log, encoding='utf8')
+                    errors = [line for line in log.splitlines() if (' E godot ' in line and ('ERROR:' in line or 'SCRIPT ERROR:' in line)) or 'FATAL EXCEPTION' in line]
+                    if errors:
+                        run.checks.append({'passed': False, 'message': 'Android runtime log contains errors', 'errors': errors})
+                        passed = False
+                    run.command('shell', 'am', 'force-stop', PACKAGE, check=False)
+                    if not args.startup_only:
+                        run.command('shell', 'am', 'force-stop', HELPER, check=False)
+                    run.command('shell', 'run-as', PACKAGE, 'rm', '-f', 'files/phase5_android_check.flag', check=False)
+    except BaseException as error:
+        passed = False
+        failure = {'type': type(error).__name__, 'message': str(error)}
+        raise
+    finally:
+        apk = Path(args.apk)
+        scope = 'Android emulator startup/rendering only; no gameplay, physical-phone or performance acceptance' if args.startup_only else 'Android emulator; native synthetic pointers; separate accelerated scripted solvability mode; no physical-phone or performance acceptance'
+        report = {'passed': passed, 'serial': args.serial, 'apk_sha256': hashlib.sha256(apk.read_bytes()).hexdigest() if apk.is_file() else None,
+                  'checks': run.checks, 'samples': run.samples, 'scope': scope, 'failure': failure}
+        (run.output / 'results.json').write_text(json.dumps(report, indent=2), encoding='utf8')
     if not passed:
         raise RuntimeError('Android runtime/rendering acceptance failed; see results.json and logcat.txt')
-    print(f'Android emulator acceptance passed: {len(run.checks)} checks. {run.output}', flush=True)
+    label = 'startup/rendering' if args.startup_only else 'acceptance'
+    print(f'Android emulator {label} passed: {len(run.checks)} checks. {run.output}', flush=True)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,8 @@
 """Regression checks for false acceptance and emulator cleanup; no device required."""
 import argparse
+from contextlib import contextmanager
 from io import BytesIO
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -54,6 +56,59 @@ class AndroidRunnerTests(unittest.TestCase):
         runner.command = Mock(return_value=self.png(True))
         runner.capture('visible')
         self.assertTrue(runner.checks[-1]['passed'])
+
+    def test_attempt_evidence_does_not_overwrite_previous_results(self):
+        previous = self.root / '.bin/phase5-android/results.json'
+        previous.parent.mkdir()
+        previous.write_bytes(b'{"passed": false, "attempt": "previous"}')
+        self.args.output = self.root / '.bin/new-attempt'
+        runner = qa.AndroidChecks(self.args)
+        runner.command = Mock(return_value=self.png(True))
+        runner.capture('visible')
+        self.assertTrue((self.args.output / 'visible.png').is_file())
+        self.assertEqual(previous.read_bytes(), b'{"passed": false, "attempt": "previous"}')
+
+    def test_startup_only_skips_touch_helper_and_gameplay(self):
+        self.args.serial = '127.0.0.1:5581'
+        self.args.startup_only = True
+        runner = qa.AndroidChecks(self.args)
+
+        def command(*args, **kwargs):
+            if args == ('shell', 'getprop', 'ro.kernel.qemu'):
+                return '1'
+            if 'resolve-activity' in args:
+                return qa.PACKAGE + '/.Launcher'
+            return 'Success'
+
+        runner.command = Mock(side_effect=command)
+        runner.start = Mock(return_value={'normal_save_unchanged': True, 'net_phase': 'idle'})
+        runner.capture = Mock()
+        runner.tap = Mock(side_effect=AssertionError('Startup-only must not enter gameplay'))
+        runner.run()
+        runner.capture.assert_called_once_with('title')
+        runner.tap.assert_not_called()
+        self.assertFalse(any(qa.HELPER in str(call) for call in runner.command.call_args_list))
+
+    def test_emulator_boot_failure_records_reason_and_replaces_stale_pass(self):
+        output = self.root / '.bin/boot-failure'
+        output.mkdir()
+        (output / 'results.json').write_text('{"passed": true}')
+
+        @contextmanager
+        def failed_session(args):
+            raise RuntimeError('Emulator exited during startup')
+            yield
+
+        arguments = ['run_android_checks.py', '--serial', 'emulator-5580', '--startup-only', '--output', str(output)]
+        with patch.object(qa, 'emulator_session', failed_session), patch('sys.argv', arguments), patch.object(qa.AndroidChecks, 'command') as adb:
+            with self.assertRaisesRegex(RuntimeError, 'exited during startup'):
+                qa.main()
+        adb.assert_not_called()
+        result = json.loads((output / 'results.json').read_text())
+        self.assertFalse(result['passed'])
+        self.assertEqual(result['failure']['message'], 'Emulator exited during startup')
+        self.assertIn('startup/rendering only', result['scope'])
+        self.assertIsNone(result['apk_sha256'])
 
     def test_startup_failure_restores_original_configuration(self):
         self.args.start_avd = 'Fixture'

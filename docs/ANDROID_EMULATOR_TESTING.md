@@ -15,6 +15,26 @@ python tools/run_android_checks.py --serial emulator-5580 --start-avd TEMPO_Phas
 python -m unittest discover -s tools -p test_android_checks.py
 ```
 
+To retry only Android startup and rendering, without installing the native touch
+helper or running a course, use a fresh evidence folder:
+
+```powershell
+python tools/run_android_checks.py --serial emulator-5580 --start-avd TEMPO_Phase3A_Test --startup-only --output .bin/android-startup-attempt-01
+```
+
+Choose a new folder name for each attempt. The report explicitly labels this as
+startup/rendering only; passing it cannot establish gameplay acceptance. Emulator
+boot failures also produce a failed `results.json` with the exception reason,
+replacing any stale passing result in that folder. Logs, screenshots and the AVD
+configuration-restoration record use the selected folder together.
+
+The latest focused diagnostic was stopped under heavy laptop memory pressure
+(less than 300 MB available during boot). The emulator reached its boot-ready
+signal around shutdown; APK installation then failed, so this attempt produced
+no new app-rendering or gameplay evidence. Its original AVD configuration was
+restored, and its process tree was stopped. Keep sufficient RAM/disk available
+before another run; do not close unrelated applications automatically.
+
 Replace the AVD name with an existing compatible local test AVD. The runner uses its own read-only session, host GPU, dynamic GLES version detection, 720 x 1280, two cores, 1 GB RAM by default, no snapshots, no visible emulator window and no microphone/audio capture. `--memory 1536` and `--gpu angle_indirect` are optional diagnostics, not a known fix for this installed SDK. It refuses an occupied emulator port. Configuration is backed up and restored after the session, including failed startup; `emulator-restored.json` records that restoration. No router/firewall settings are changed.
 
 For an already running compatible emulator, omit `--start-avd`. The serial must explicitly identify an emulator or local emulator TCP endpoint, and `ro.kernel.qemu` must equal `1` before installing or changing anything. Physical-phone serials are refused. The runner never uninstalls the game. Its disposable touch helper may be replaced if its temporary signing identity differs.
@@ -38,6 +58,10 @@ The native-input portion has no scripted steering. The separate accelerated solv
 `scripts/AndroidCheck.gd` is an opt-in developer probe. For Android debug builds the runner writes a marker inside the app's private files, then removes it on exit. Ordinary startup has no QA navigation action; release phone builds ignore that private debug marker. Test preferences/progression use `phase5_android_qa.cfg`, not `save.cfg`. The exported launcher's security policy discards arbitrary engine command-line extras, so the runner does not depend on those extras.
 
 Reports live in `.bin/phase5-android/`: `results.json`, `environment.json`, `logcat.txt`, native instrumentation logs, title/settings/held/pause/result PNGs, emulator log and configuration-restoration report. `results.json` is reset to failed startup before each attempt; a missing/failed run cannot reuse an old passing report. The final result is not accepted solely because touch injection returned success or the app process stayed alive.
+
+Use `--output` to keep another attempt separate. Seven device-free regression
+tests cover physical-serial refusal, blank-frame rejection, nonblank capture,
+AVD restoration, evidence isolation, startup-only scope and failed-boot reporting.
 
 This session's partial run is preserved separately as `.bin/phase5-android-logic-only.json` with overall `passed: false` and `logic_passed: true`; the accompanying failed render is explicit. The final default-lighting host/ANGLE attempts are not passing runs. `.bin/phase5-emulator-preservation.json` verifies unchanged SHA-256/length of the original AVD's userdata/encryption images and byte-identical configuration restoration. Three temporary overlays created by this session were identified by path/time/backing-image metadata and removed after their emulator processes stopped; older/unrelated overlays were preserved.
 

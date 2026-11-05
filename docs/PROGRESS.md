@@ -904,3 +904,66 @@ Final local candidates were rebuilt and APK signatures verified after the QA add
 - [x] Commit the implementation checkpoint as `Phase 5: cooperative polish and release`; full Phase 5 acceptance remains open and nothing is published.
 
 The commit excludes the preexisting `project.godot` physics-tick edit and unrelated reference video/pack documents. The earlier uncommitted-checkpoint note above is historical. This handoff does not start another phase or close the outstanding hardware/human gates.
+
+## Phase 5 continuation: Android startup diagnostics and smoke-fixture reliability
+
+The user's `Next` instruction continues the outstanding Phase 5 validation. Added
+`--startup-only` to `tools/run_android_checks.py`: it checks Android Title telemetry
+and visible rendering without installing the touch helper or entering gameplay.
+`--output` puts an attempt's logs, captures, results and configuration-restoration
+record in its own directory. A boot failure now records its exception and a
+failed result even when the emulator never enters the test body; an older pass
+cannot survive as the current outcome. Reports label startup-only scope explicitly.
+
+Seven device-free QA-runner tests pass, including three new cases for evidence
+isolation, excluding touch/gameplay from startup-only mode, and replacing a stale
+pass with the real failed-boot reason. The existing physical-serial, blank-frame
+and configuration-restoration checks remain intact. Required GUT rerun passes
+**85 tests / 7,807 assertions / 21 suites**: `.bin/phase5-next-tests.log`.
+
+A bounded read-only host-GPU diagnostic was stopped under heavy laptop memory
+pressure (248,676 KiB available in one sample). Boot-ready appeared during
+shutdown and APK installation could not complete, so it supplies **no new app
+rendering or gameplay acceptance evidence**. The prior failed-render results
+remain separate. The emulator's process tree was stopped and its configuration
+restored. All four original AVD userdata/encryption image hashes and lengths,
+plus configuration bytes, remain unchanged: `.bin/phase5-next-preservation.json`.
+Only six positively identified disposable overlays from our previous 19:29 and
+current 20:21 sessions were removed after shutdown, with path/time/backing-image
+records in `.bin/phase5-next-*-cleanup.json`. Older unrelated overlays and user
+applications were preserved. No phone, SDK, router or firewall was changed.
+
+The required LAN rerun exposed two smoke-fixture problems. First, incoming
+snapshots restore the normal control adapter's `enabled` flag, so its idle
+physics callback could overwrite the fixture's sustained seat input. The fixture
+now disables that adapter's physics processing while retaining the normal
+`Net.submit_input` path. Second, a one-shot spoof sent over `unreliable_ordered`
+could be superseded before host validation. The original forged-thrust probe is
+retained, with an additional reliable forged-release probe to exercise the same
+host ownership validation deterministically. Existing gas/movement/height,
+ownership, sustained-force, release/expiry and save assertions are unchanged;
+reports now include the three observed gas/movement/height flags. These changes
+are confined to `tools/net_smoke_peer.gd`; game networking and physics are unchanged.
+
+Required LAN validation after both fixture fixes passes **128 checks**:
+two-peer crew 41, four-peer crew 75, unreachable host 6 and abrupt host loss 6.
+Final evidence: `.bin/phase5-next-net-final.log` and
+`.bin/phase4-validation/20261105-203340/`. The earlier failed runs remain under
+`.bin/phase4-validation/20261105-202651/` and
+`.bin/phase4-validation/20261105-202951/`.
+
+No runtime game files or export presets changed in this continuation, so the
+previous signed APKs and embedded Windows candidate were retained. The testing
+guide now correctly separates the committed implementation checkpoint from
+pending publication. Android rendering, physical ARM execution, two phone
+performance classes, wireless co-op and human playtests remain open.
+
+### Gate 5 follow-up status
+
+- [x] Required GUT: 85 tests and 7,807 assertions pass.
+- [x] Required LAN smoke: all 128 checks pass after fixture repairs, with original assertions retained.
+- [x] Seven QA-runner regression tests; separate startup-only reports and preserved prior evidence.
+- [x] Original AVD images/configuration, unrelated work and signing material preserved.
+- [ ] Accepted Android rendering and ARM execution; this emulator diagnostic does not close either gate.
+- [ ] Two physical phone classes, touch/Back/Home/haptics/heat, airplane-mode campaign/save, two/four-phone Wi-Fi and human playtests.
+- [ ] Publication decision; full Phase 5 acceptance remains open.
