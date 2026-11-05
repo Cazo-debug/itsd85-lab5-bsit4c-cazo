@@ -100,7 +100,7 @@ func build_menu() -> void:
 			button("Tap to start", start)
 		"MainMenu":
 			content.add_child(label("Ahoy, %s!" % GameState.avatar.get("name", "Player")))
-			for entry: Array in [["Play", "CrewSetup"], ["Avatar", "AvatarCreator"], ["Settings", "Settings"], ["Credits", "Credits"]]:
+			for entry: Array in [["Play", "CrewSetup"], ["Courses", "LevelSelect"], ["Avatar", "AvatarCreator"], ["Settings", "Settings"], ["Credits", "Credits"]]:
 				button(entry[0], open_avatar if entry[1] == "AvatarCreator" else go.bind(entry[1]))
 		"ModeSelect":
 			content.add_child(label("Sky Garden\nOne ring. Reach the summit together!"))
@@ -272,6 +272,7 @@ func build_crew() -> void:
 	content.add_child(play_row)
 	button("Start Sky Garden", launch_sky.bind(false), play_row).add_theme_font_size_override("font_size", 28)
 	button("Practice", launch_sky.bind(true), play_row).add_theme_font_size_override("font_size", 28)
+	button("Choose course", go.bind("LevelSelect"), options)
 	button("Back", back)
 	refresh_crew()
 
@@ -399,20 +400,9 @@ func control_selected_seat() -> void:
 	crew_status.text = "You control seat %d with aim + hold." % (selected_seat + 1)
 
 func launch_sky(practice: bool) -> void:
-	if not GameState.has_crew():
+	var error: String = CampaignFlow.launch_error(GameState, 1, practice)
+	if not error.is_empty():
 		if crew_status:
-			crew_status.text = "Add a rider before launching."
+			crew_status.text = error
 		return
-	var locals: Array[int] = []
-	for index: int in range(4):
-		if GameState.crew_slots[index].control == "local":
-			locals.append(index)
-	if locals.is_empty():
-		if crew_status:
-			crew_status.text = "Choose at least one Local rider to steer."
-		return
-	if GameState.active_local_seat not in locals:
-		GameState.active_local_seat = locals[0]
-	GameState.mode = "offline"
-	GameState.current_level = 1
-	get_tree().change_scene_to_file("res://scenes/levels/Practice.tscn" if practice else GameState.level_scene_path(1))
+	get_tree().change_scene_to_file(CampaignFlow.prepare_launch(GameState, 1, practice))

@@ -20,9 +20,13 @@ var previous_s: float = 3.0
 var won: bool = false
 var pickups_collected: int = 0
 var practice_index: int = 0
+var result: Dictionary = {}
+var settings_save_error: Error = OK
 
 func _ready() -> void:
-	definition = LevelDefs.LEVELS[0]
+	if practice:
+		level_number = clampi(GameState.current_level, 1, LevelDefs.LEVELS.size())
+	definition = LevelDefs.LEVELS[clampi(level_number, 1, LevelDefs.LEVELS.size()) - 1]
 	time_limit = definition.time_limit
 	time_left = time_limit
 	course = CurvedCourse.new()
@@ -46,18 +50,18 @@ func _ready() -> void:
 	hud.controls.ring = player
 	hud.controls.camera = camera
 	hud.controls.active_seat = GameState.active_local_seat
-	hud.hint.text = "Seat %d: aim + hold to fart\nWASD + Space on desktop" % (GameState.active_local_seat + 1)
 	hud.back_requested.connect(return_to_menu)
 	hud.pause_requested.connect(toggle_pause)
 	hud.reset_requested.connect(recover)
+	hud.action_requested.connect(handle_action)
 	brain = CrewBrain.new()
 	brain.ring = player
 	add_child(brain)
 	player.fell.connect(hud.controls.clear)
 	player.recovered.connect(hud.controls.clear)
 	player.recovered.connect(camera.snap)
-	if practice:
-		hud.reset_button.text = "Next area"
+	player.thrust_started.connect(mark_tutorial_seen)
+	hud.present(run_snapshot())
 
 func _physics_process(delta: float) -> void:
 	state_time += delta
@@ -68,7 +72,6 @@ func _physics_process(delta: float) -> void:
 				state_time = 0
 				camera.overview = false
 		State.COUNTDOWN:
-			hud.banner.text = "READY, CREW?\n%d" % maxi(1, 3 - int(state_time))
 			if state_time >= 3.0:
 				begin_run()
 		State.RACING:
@@ -80,20 +83,30 @@ func _physics_process(delta: float) -> void:
 			if not practice and time_left <= 0:
 				end_run(false)
 			elif player.falling:
-				hud.banner.show()
-				hud.banner.text = "CREW OVERBOARD!\nReturning to checkpoint"
 				if player.fall_time >= 1.5:
 					player.respawn_at_checkpoint()
 					previous_s = player.route_s
 			else:
-				hud.banner.visible = race_time < 0.8
 				check_progress()
 				check_pickups()
-	var section: String = "Cloud launch"
+	hud.present(run_snapshot())
+
+func run_snapshot() -> Dictionary:
+	var section: String = definition.sections[0][1]
 	for item: Array in definition.sections:
 		if player.route_s / course.path.length >= item[0]:
 			section = item[1]
-	hud.update_status(player, time_left, section, practice)
+	var crew: Array[Dictionary] = []
+	for seat: int in range(4):
+		crew.append({"occupied": player.seat_control[seat] != "empty", "gas": player.gas[seat],
+			"firing": player.firing[seat], "name": player.avatars[player.slots[seat].profile].get("name", "Player") if player.seat_control[seat] != "empty" else "Empty"})
+	return {"state": State.keys()[state], "course": definition.name, "section": section,
+		"time_left": time_left, "race_time": race_time, "countdown": maxi(1, 3 - int(state_time)),
+		"progress": player.route_s / course.path.length, "crew": crew, "practice": practice,
+		"falling": player.falling, "sound": GameState.settings.sound, "result": result.duplicate(),
+		"settings_save_error": settings_save_error,
+		"next_available": CampaignFlow.next_level(GameState, result) > 0,
+		"hint": CourseHints.for_run(course.path, player.route_s, player.gas[clampi(GameState.active_local_seat, 0, 3)], player.falling)}
 
 func begin_run() -> void:
 	state = State.RACING
@@ -103,7 +116,6 @@ func begin_run() -> void:
 	player.sleeping = false
 	hud.controls.enabled = true
 	hud.controls.clear()
-	hud.banner.text = "LET'S TOOT!"
 
 func check_progress() -> void:
 	var surface: Dictionary = course.path.surface_at(player.position, player.route_s)
@@ -140,18 +152,12 @@ func end_run(success: bool) -> void:
 	hud.controls.enabled = false
 	hud.controls.clear()
 	brain.enabled = false
-	var stars: int = GameState.calc_stars(time_left, time_limit) if success else 0
-	if not practice:
-		GameState.last_result = {"won": success, "stars": stars, "level": 1, "time": race_time, "recoveries": player.recoveries}
-		if success:
-			GameState.complete_level(1, stars, race_time)
-	hud.banner.show()
-	hud.banner.text = "CREW COMPLETE!\n%d stars / %d recoveries" % [stars, player.recoveries] if success else "TIME'S UP\nTry again together"
-	hud.pause_button.text = "Again"
+	result = CampaignFlow.finish(GameState, level_number, race_time, time_limit, success, player.recoveries, practice)
+	hud.present(run_snapshot())
 
 func toggle_pause() -> void:
 	if state == State.FINISHED:
-		get_tree().reload_current_scene()
+		restart_run()
 		return
 	if state not in [State.RACING, State.PAUSED]:
 		return
@@ -162,9 +168,43 @@ func toggle_pause() -> void:
 	hud.controls.enabled = not paused
 	hud.controls.clear()
 	brain.enabled = not paused
-	hud.banner.visible = paused
-	hud.banner.text = "PAUSED"
-	hud.pause_button.text = "Resume" if paused else "Pause"
+	hud.present(run_snapshot())
+
+func mark_tutorial_seen(_seat: int) -> void:
+	if not practice and not GameState.seen_tutorial and GameState.mode == "offline":
+		GameState.seen_tutorial = true
+		GameState.save_progress(GameState.persistence_path)
+
+func handle_action(action: String) -> void:
+	match action:
+		"resume":
+			if state == State.PAUSED:
+				toggle_pause()
+		"retry":
+			player.release_all_inputs()
+			restart_run()
+		"next":
+			var number: int = CampaignFlow.next_level(GameState, result)
+			if number > 0:
+				var destination: String = CampaignFlow.prepare_launch(GameState, number)
+				if not destination.is_empty():
+					leave_scene(destination)
+		"menu": leave_scene("res://scenes/ui/MainMenu.tscn")
+		"sound":
+			settings_save_error = CampaignFlow.toggle_sound(GameState)
+			hud.present(run_snapshot())
+		"save":
+			if state == State.FINISHED and result.get("save_error", OK) != OK:
+				result.save_error = GameState.save_progress(GameState.persistence_path)
+				result.saved = result.save_error == OK
+				GameState.last_result = result.duplicate()
+				hud.invalidate_panels()
+				hud.present(run_snapshot())
+
+func restart_run() -> void:
+	player.release_all_inputs()
+	brain.enabled = false
+	get_tree().reload_current_scene()
 
 func recover() -> void:
 	if state != State.RACING:
@@ -181,10 +221,14 @@ func recover() -> void:
 	previous_s = player.route_s
 
 func return_to_menu() -> void:
+	leave_scene("res://scenes/ui/CrewSetup.tscn")
+
+func leave_scene(destination: String) -> void:
 	player.simulate = false
 	player.release_all_inputs()
+	brain.enabled = false
 	hud.controls.clear()
-	get_tree().change_scene_to_file("res://scenes/ui/CrewSetup.tscn")
+	get_tree().change_scene_to_file(destination)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

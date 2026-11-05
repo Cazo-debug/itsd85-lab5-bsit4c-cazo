@@ -25,6 +25,7 @@ var avatar: Dictionary:
 		local_profiles[0] = AvatarData.sanitize(value) if not value.is_empty() else {}
 var settings: Dictionary = DEFAULT_SETTINGS.duplicate()
 var seen_tutorial: bool = false
+var last_save_error: Error = OK
 # Tests set this on their isolated instance; production uses SAVE_PATH.
 var persistence_path: String = SAVE_PATH
 
@@ -54,6 +55,7 @@ func save_progress(path: String = SAVE_PATH) -> Error:
 				var copied: Error = DirAccess.copy_absolute(path, backup)
 				if copied != OK:
 					push_warning("Save migration stopped: backup failed")
+					last_save_error = copied
 					return copied
 	local_profiles = CrewData.sanitize_profiles(local_profiles)
 	crew_slots = CrewData.sanitize_slots(crew_slots, local_profiles)
@@ -70,6 +72,7 @@ func save_progress(path: String = SAVE_PATH) -> Error:
 		push_warning("Could not save progress: %s" % error_string(error))
 	else:
 		save_version = SAVE_VERSION
+	last_save_error = error
 	return error
 
 func load_progress(path: String = SAVE_PATH) -> void:

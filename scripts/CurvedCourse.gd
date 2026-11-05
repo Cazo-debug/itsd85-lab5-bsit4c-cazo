@@ -95,12 +95,13 @@ func build(definition: Dictionary) -> void:
 	water_material.set_shader_parameter("hole_count", path.holes.size())
 	var cliff_material: ShaderMaterial = ShaderMaterial.new()
 	cliff_material.shader = preload("res://shaders/route_cliff.gdshader")
+	cliff_material.set_shader_parameter("cliff_tint", definition.get("cliff_tint", Color.WHITE))
 	for key: String in builders:
 		var instance: MeshInstance3D = MeshInstance3D.new()
 		instance.name = key
 		instance.mesh = builders[key].commit()
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		instance.material_override = water_material if key == "Water" else (cliff_material if key in ["Cliffs", "Shafts"] else AvatarModel.material(Color("7acb3b") if key == "Rims" else Color("ffa24c")))
+		instance.material_override = water_material if key == "Water" else (cliff_material if key in ["Cliffs", "Shafts"] else AvatarModel.material(Color("7acb3b") if key == "Rims" else definition.get("bank_color", Color("ffa24c"))))
 		add_child(instance)
 		if key == "Water":
 			water = instance
@@ -177,7 +178,7 @@ func build_decor() -> void:
 		var side: float = -1 if index % 2 == 0 else 1
 		var at: Vector3 = frame.position + frame.lateral * side * (frame.width / 2 + 10 + rng.randf_range(0, 12)) - Vector3.UP * rng.randf_range(10, 22)
 		for lobe: int in range(3):
-			decor.add_part("Clouds", decor.sphere(8, 4), AvatarModel.material(Color("effaff")), at + Vector3(lobe * 3, lobe % 2, 0), Vector3(4.5, 1.4, 2.8))
+			decor.add_part("Clouds", decor.sphere(8, 3), AvatarModel.material(Color("effaff")), at + Vector3(lobe * 3, lobe % 2, 0), Vector3(4.5, 1.4, 2.8))
 		if index % 4 == 0:
 			var island: Vector3 = frame.position + frame.lateral * side * (frame.width / 2 + 10) - Vector3.UP * 4
 			decor.add_part("Islets", decor.cylinder(1, 0.2, 8), AvatarModel.material(Color("ef8071")), island - Vector3.UP * 4, Vector3(3.5, 8, 3.5))

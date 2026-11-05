@@ -1,13 +1,13 @@
 # Toot Tubes - Game Design Document
 
-Status: revised Phases 1 and 2 implemented, updated 2026-11-02; human play and real-phone acceptance pending. Main Play now launches one shared physical ring on the curved, elevated Sky Garden. Practice uses the same geometry with section reset points and no timer. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
+Status: Phases 1-3 implemented, updated 2026-11-05; laptop checks pass, human play and real-phone acceptance deferred. Main Play configures one shared physical ring; Courses opens the five-course offline campaign. Practice remains untimed. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
 
 | Area | Implemented baseline | v3 target still pending |
 |---|---|---|
 | Riders and saves | Four profiles, validated seats/owners, profile-0 avatar alias, version-2 saves and original-file migration backup | Network-owned rider seats |
 | Preview and navigation | One ring with four rider anchors, saved profiles/leader style, active assistants and four local controller bindings | Four-phone LAN in Phase 4 |
-| Course and movement | One physical ring, sustained gas, S-bends, bridge, climb, hairpin, descent/dip and six hazard types | Four more campaign courses in Phase 3 |
-| Validation | Migration/crew/UI, live physics, recovery, legal-input 1-4 rider completions and rendered portrait checks | Real-phone review and revised gameplay acceptance |
+| Course and movement | Five original courses, one physical ring, sustained gas, curved/elevated terrain, gates/crushers/boulders/whirlpools, progression and complete offline flow | Four-phone LAN and Phase 5 presentation/audio polish |
+| Validation | 70 tests, 45 campaign solvability cases, ordered UI campaign, fresh-process reload and rendered portrait checks | Human play, real-phone and airplane-mode acceptance |
 
 ## 1. Title and pitch
 
@@ -23,11 +23,11 @@ Implemented: aim, hold to thrust, release to stop, repeat as needed. Each rider 
 
 ## 4. Goals, win and loss
 
-The entire crew completes the course together. Timed challenges retain cooperative success/timeout and existing stars pending time-budget tuning; practice has no time limit. Falling resets the shared ring at a safe checkpoint while the timer continues. There is no rival ring, opponent finish or individual finishing place. Specific hazards explicitly declare push, tip, fall or reset behavior; not every spike means instant death.
+The entire crew completes the course together. Cooperative success/timeout uses the retained star thresholds and per-course budgets checked with 1-4 riders; human difficulty review is deferred. Practice has no time limit. Falling resets the shared ring at a safe checkpoint while the timer continues. There is no rival ring, opponent finish or individual finishing place. Ordinary solid hazards push/tip; holes and exposed edges remove support.
 
 ## 5. Level progression
 
-Five planned original courses: Sky Garden, Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit. Mix S-bends, hairpins, narrow passages, broad pools, climbs, descents and dips. Vary scenery, flow and obstacle timing instead of repeating a straight lane with more hazards. Phase 2 builds the first course plus a geometry/physics fixture; Phase 3 completes the campaign, locks and results. Preserve saved unlocks/best times/stars and keep online results isolated from offline progression.
+Five implemented original courses: Sky Garden, Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit. Routes mix bends, narrow passages, broad pools, climbs, descents and dips. Vary widths, flow and obstacle timing. Phase 3 adds course locks, cooperative results, Retry/Next/Menu, pause/restart/sound/quit and contextual hints. Existing unlocks/best times/stars and version-2 saves are preserved; online results remain isolated from offline progression.
 
 Phase 2's revised delivery requires those core shapes in playable Sky Garden itself: launch pool, garden S-bends, narrow sky bridge, climb/crest, canyon hairpin and descent, obstacle garden and shared finish. Six playable hazard types include the spiked crossbar alongside bumpers, current, sweeper, mallet and holes. Start Sky Garden and untimed Practice must be reachable through the existing crew screen; a changed preview does not count as the new environment.
 

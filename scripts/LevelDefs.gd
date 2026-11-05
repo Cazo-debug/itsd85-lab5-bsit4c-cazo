@@ -1,9 +1,14 @@
 class_name LevelDefs
 extends RefCounted
 
-static var LEVELS: Array[Dictionary] = [SkyGardenData.definition()]
+static var LEVELS: Array[Dictionary] = campaign()
 
-# Only the tutorial course belongs to Phase 2. Phases 3–5 add the other levels.
+static func campaign() -> Array[Dictionary]:
+	var definitions: Array[Dictionary] = [SkyGardenData.definition()]
+	definitions.append_array(CampaignCourses.definitions())
+	return definitions
+
+# Isolated legacy fixtures retain their original data contract.
 const LEGACY_LEVELS: Array[Dictionary] = [{
 	"number": 1, "name": "Lazy River",
 	"goal_text": "Toot to the finish ring in 75 seconds",

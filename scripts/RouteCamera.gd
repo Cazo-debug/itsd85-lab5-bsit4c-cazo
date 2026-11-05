@@ -17,8 +17,12 @@ func _ready() -> void:
 
 func show_overview() -> void:
 	overview = true
-	position = Vector3(75, 260, 120)
-	look_position = Vector3(70, 0, -105)
+	var bounds: AABB = AABB(path.frames[0].position, Vector3.ZERO)
+	for frame: Dictionary in path.frames:
+		bounds = bounds.expand(frame.position)
+	look_position = bounds.get_center()
+	var span: float = maxf(bounds.size.x * 1.7, bounds.size.z)
+	position = look_position + Vector3(0, span * 1.15, span * 0.8)
 	look_at(look_position)
 
 func snap() -> void:

@@ -2,7 +2,7 @@
 
 Revised 2026-11-01. Target: Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer.
 
-**Status (2026-11-02): revised Phases 1 and 2 implemented; human/device gates pending.** Main Play launches the curved, elevated Sky Garden with one physical ring and 1-4 riders; untimed Practice is reachable. Automated tests and scripted completions pass. See `docs/PROGRESS.md` and `docs/PHASE2_SKY_GARDEN_TESTING.md`. Phase 3 has not started.
+**Status (2026-11-05): Phases 1-3 implemented with laptop validation.** Five cooperative courses, course locks/results, complete offline navigation and separated UI presentation are available. Human/device and physical airplane-mode checks remain deferred under the user's laptop-first instruction. See `docs/PROGRESS.md`, `docs/PHASE3_TESTING.md` and `docs/UI_LOGIC_BOUNDARIES.md`. Phase 4 has not started.
 
 The user has replaced the earlier competitive design with **one shared swim ring carrying up to four cooperating riders**, varied curved/elevated courses, repeated directional thrust and many obstacles. This document is the authoritative implementation plan; [ENVIRONMENT_SPEC.md](ENVIRONMENT_SPEC.md) defines geometry, movement and hazard behavior. User instructions take precedence. The old HTML sample is a visual reference, not a source of mandatory gameplay numbers. Previous plans are preserved under `docs/archive/` as historical material only.
 
@@ -221,15 +221,35 @@ New `SwimRing`, `CrewInput`, `CrewBrain`, `CoursePath`, `RingPhysicsProfile`, `C
 
 Automated/rendered checks support the checked items. Human control/camera feel and real-device acceptance remain open; desktop counters do not establish phone performance.
 
-Stop here. Full campaign and real-phone network co-op remain separate phases.
+Gate 2 human/device checks remain recorded as open. The user subsequently authorized Phase 3 using laptop validation, with phone checks deferred; this does not relabel those earlier manual checks as passed.
+
+## Phase 3: Five cooperative courses and complete offline flow
+
+Execution authorized 2026-11-05 after the user accepted laptop-first checking and required UI/gameplay separation. Preserve the Section 0/2 rules, existing saves and shared physics; no Phase 4 networking or Phase 5 audio/release work.
+
+Expand the five environment directions above with crushers, moving gates, boulders, whirlpools, spiked barriers and combined timing puzzles. Keep fair openings and safe respawns. Add Level Select/locks, cooperative Result/Retry/Next/Menu, Pause/Restart/Sound/Quit and contextual tutorials. Preserve offline saves, best times/stars, settings and airplane-mode play. Cooperative seat assistants replace opponent bots. Test all five courses with the same legal-input driver, ordered progression, checkpoint safety, different crew sizes and difficulty variety. No rival finish, rankings or separate opponent ring. Gate: all five courses, lose/retry, save/relaunch, airplane mode and manual phone tests. Commit `Phase 3: five cooperative courses and progression`.
+
+### Delivered boundaries and files
+
+`CampaignFlow` owns campaign application rules. `Level` coordinates simulation and supplies detached snapshots. `CrewHUD`, `scripts/ui/CampaignScreen.gd`, `RunPanels.gd` and `CrewPadView.gd` own presentation/layout. Keep stable input commands and signals when restyling UI. `CampaignCourses`, `LevelDefs`, Levels 02-05, shared path/hazard/rendering changes and the existing Sky Garden use the same movement/water profiles. `GameState` retains version-2 storage/migration contracts and reports write errors. Tests and verification scripts remain outside exports. Details: `docs/UI_LOGIC_BOUNDARIES.md`.
+
+### Gate 3
+
+- [x] All five original cooperative courses are playable; shared geometry/physics and no opponent ring.
+- [x] Course locks, stars/times, cooperative Result/Retry/Next/Menu and final-course boundary.
+- [x] Pause/Resume/Restart/Sound/Quit and contextual hints; UI changes use the documented presentation interfaces.
+- [x] Lose/retry and complete ordered campaign through actual menu actions.
+- [x] Save/relaunch verified in a fresh Godot process; profiles/settings and progression preserved.
+- [x] Required `tools/run_tests.sh`, all-course 1-4 rider/assistant solvability, safe checkpoints, collision/recovery and rendered laptop checks.
+- [ ] Human feel/difficulty review and physical-phone touch/Back/performance acceptance; deferred by the user.
+- [ ] Physical airplane-mode completion/retry/relaunch; source/build/offline laptop evidence is recorded separately.
+- [x] Update progress/testing/architecture guides and commit `Phase 3: five cooperative courses and progression`.
+
+Stop after Phase 3. Human/device checks remain open; Phase 4 needs a separate execution instruction.
 
 ## Later-phase compatibility requirements (not execution scope)
 
-These replace the old competitive tasks so future phases cannot restore the discarded racing design. Detailed implementation of these phases waits for the revised Phase 2 gate.
-
-### Phase 3: Five cooperative courses and complete offline flow
-
-Expand the five environment directions above with crushers, moving gates, boulders, whirlpools, spiked barriers and combined timing puzzles. Keep fair openings and safe respawns. Add Level Select/locks, cooperative Result/Retry/Next/Menu, Pause/Restart/Sound/Quit and contextual tutorials. Preserve offline saves, best times/stars, settings and airplane-mode play. Cooperative seat assistants replace opponent bots. Test all five courses with the same legal-input driver, ordered progression, checkpoint safety, different crew sizes and difficulty variety. No rival finish, rankings or separate opponent ring. Gate: all five courses, lose/retry, save/relaunch, airplane mode and manual phone tests. Commit `Phase 3: five cooperative courses and progression`.
+These replace the old competitive tasks so future phases cannot restore the discarded racing design.
 
 ### Phase 4: Two to four phones on one shared ring
 

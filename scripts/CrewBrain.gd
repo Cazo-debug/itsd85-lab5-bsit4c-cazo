@@ -6,6 +6,7 @@ var all_seats: bool = false
 var enabled: bool = true
 var clock: float = 0.0
 var speed: float = 7.2
+var control_seat: int = -1
 var resting: Array[bool] = [false, false, false, false]
 
 func _physics_process(delta: float) -> void:
@@ -13,6 +14,8 @@ func _physics_process(delta: float) -> void:
 	if ring == null:
 		return
 	for index: int in range(4):
+		if control_seat >= 0 and index != control_seat:
+			continue
 		if ring.seat_control[index] == "empty" or (not all_seats and ring.seat_control[index] != "assist"):
 			continue
 		if not enabled or not ring.simulate or ring.falling:

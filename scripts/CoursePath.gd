@@ -10,6 +10,7 @@ var width_keys: Array = []
 var exposed: Vector2 = Vector2(0.245, 0.315)
 var water_style: WaterStyle = WaterStyle.new()
 var water_time: float = 0.0
+var flow_zones: Array[Dictionary] = []
 
 func build(definition: Dictionary) -> void:
 	curve.clear_points()
@@ -23,6 +24,13 @@ func build(definition: Dictionary) -> void:
 	length = curve.get_baked_length()
 	width_keys = definition.widths
 	water_style = definition.get("water_style", WaterStyle.new())
+	exposed = definition.get("exposed", Vector2(0.245, 0.315))
+	flow_zones.clear()
+	for hazard: Dictionary in definition.get("hazards", []):
+		if hazard.type in ["current", "whirlpool"]:
+			flow_zones.append({"kind": hazard.type, "s": hazard.fraction * length, "lateral": hazard.lateral,
+				"radius": hazard.get("radius", 7.0), "strength": hazard.get("strength", 1.8),
+				"cross_flow": hazard.get("cross_flow", 0.0)})
 	holes.clear()
 	for hole: Dictionary in definition.holes:
 		holes.append({"s": hole.fraction * length, "lateral": hole.lateral, "radius": hole.radius})
@@ -88,8 +96,22 @@ func surface_at(point: Vector3, previous_s: float) -> Dictionary:
 	result.position += result.lateral * result.offset + Vector3.UP * wave.x
 	result.normal = (result.lateral + Vector3.UP * wave.z).cross(result.tangent + Vector3.UP * wave.y).normalized()
 	result["height"] = result.position.y
-	result["flow"] = result.tangent * (1.3 if result.s / length > 0.18 and result.s / length < 0.23 else 0.0)
+	result["flow"] = flow_at(result) if valid else Vector3.ZERO
 	return result
+
+func flow_at(frame: Dictionary) -> Vector3:
+	var flow: Vector3 = Vector3.ZERO
+	for zone: Dictionary in flow_zones:
+		var along: float = frame.s - zone.s
+		if zone.kind == "current" and absf(along) < length * 0.025:
+			flow += frame.tangent * 1.3 + frame.lateral * zone.cross_flow
+		elif zone.kind == "whirlpool":
+			var across: float = frame.offset - zone.lateral
+			var offset: Vector2 = Vector2(along, across)
+			var weight: float = 1.0 - clampf(offset.length() / zone.radius, 0.0, 1.0)
+			flow += (frame.tangent * across - frame.lateral * along) / zone.radius * zone.strength * weight
+			flow -= (frame.tangent * along + frame.lateral * across) * 0.06 * weight
+	return flow.limit_length(3.0)
 
 func safe_transform(distance: float) -> Transform3D:
 	var at: Dictionary = sample(distance)

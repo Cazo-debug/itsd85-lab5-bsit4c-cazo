@@ -10,6 +10,7 @@ var gas_id: int = -1
 var stick: Vector2 = Vector2(0, -1)
 var keyboard_armed: bool = true
 var last_keyboard_fire: Array[bool] = [false, false, false, false]
+var pad_view: RefCounted = preload("res://scripts/ui/CrewPadView.gd").new()
 const KEYS: Array = [[KEY_A, KEY_D, KEY_W, KEY_S, KEY_SPACE], [KEY_J, KEY_L, KEY_I, KEY_K, KEY_U], [KEY_F, KEY_H, KEY_T, KEY_G, KEY_R], [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN, KEY_ENTER]]
 
 func _ready() -> void:
@@ -17,10 +18,10 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func stick_rect() -> Rect2:
-	return Rect2(32, size.y - 252, 256, 210)
+	return pad_view.stick_rect(size)
 
 func gas_rect() -> Rect2:
-	return Rect2(size.x - 288, size.y - 252, 256, 210)
+	return pad_view.gas_rect(size)
 
 func clear() -> void:
 	stick_id = -1
@@ -66,7 +67,7 @@ func handle_drag(index: int, point: Vector2) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		var owned: bool = event.index in [stick_id, gas_id] or stick_rect().has_point(event.position) or gas_rect().has_point(event.position)
+		var owned: bool = event.index in [stick_id, gas_id] or (enabled and (stick_rect().has_point(event.position) or gas_rect().has_point(event.position)))
 		handle_touch(event.index, event.position, event.pressed)
 		if owned:
 			get_viewport().set_input_as_handled()
@@ -113,18 +114,4 @@ func _notification(what: int) -> void:
 		clear()
 
 func _draw() -> void:
-	var font: Font = preload("res://assets/fonts/Fredoka.ttf")
-	for rect: Rect2 in [stick_rect(), gas_rect()]:
-		draw_style_box(panel_style(Color(0.06, 0.22, 0.31, 0.90)), rect)
-	draw_circle(stick_rect().get_center(), 69, Color("3b839f"))
-	draw_circle(stick_rect().get_center() + stick * 46, 28, Color("eafbff"))
-	draw_string(font, stick_rect().position + Vector2(68, 34), "AIM", HORIZONTAL_ALIGNMENT_LEFT, -1, 28)
-	draw_circle(gas_rect().get_center(), 65, Color("ffcf50") if gas_id >= 0 else Color("7acb3b"))
-	draw_string(font, gas_rect().get_center() + Vector2(-49, 10), "HOLD", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color("183441"))
-	draw_string(font, gas_rect().position + Vector2(55, 34), "TO FART", HORIZONTAL_ALIGNMENT_LEFT, -1, 28)
-
-func panel_style(color: Color) -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = color
-	style.set_corner_radius_all(32)
-	return style
+	pad_view.draw(self, stick, gas_id >= 0)

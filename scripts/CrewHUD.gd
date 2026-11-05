@@ -4,6 +4,7 @@ extends CanvasLayer
 signal back_requested
 signal pause_requested
 signal reset_requested
+signal action_requested(action: String)
 var controls: CrewInput
 var root: Control
 var timer_label: Label
@@ -13,6 +14,8 @@ var hint: Label
 var seats: Array[Label] = []
 var pause_button: Button
 var reset_button: Button
+var panels: RunPanels
+var panel_key: String = ""
 
 func make_label(text: String, font_size: int = 28) -> Label:
 	var label: Label = Label.new()
@@ -81,14 +84,45 @@ func _ready() -> void:
 	root.add_child(hint)
 	controls = CrewInput.new()
 	root.add_child(controls)
+	panels = RunPanels.new()
+	root.add_child(panels)
+	panels.action_requested.connect(action_requested.emit)
 
-func update_status(ring: SwimRing, time: float, section: String, practice: bool) -> void:
-	timer_label.text = "%s / %s" % [section, "Practice" if practice else "%d s" % ceili(time)]
-	progress.value = ring.route_s / ring.path.length * 100
+func invalidate_panels() -> void:
+	panel_key = ""
+
+# This is the stable view contract: UI reads a detached snapshot, never a body/save.
+func present(view: Dictionary) -> void:
+	timer_label.text = "%s / %s" % [view.section, "Practice" if view.practice else "%d s" % ceili(view.time_left)]
+	timer_label.modulate = Color("ff8b94") if not view.practice and view.time_left < 10 else Color.WHITE
+	progress.value = view.progress * 100
+	hint.text = view.hint + "\nAIM + HOLD / WASD + Space"
+	hint.visible = view.state not in ["PAUSED", "FINISHED"]
+	controls.visible = view.state not in ["PAUSED", "FINISHED"]
+	pause_button.text = "Resume" if view.state == "PAUSED" else ("Again" if view.state == "FINISHED" else "Pause")
+	reset_button.text = "Next area" if view.practice else "Recover"
 	for index: int in range(4):
-		if ring.seat_control[index] == "empty":
+		var seat: Dictionary = view.crew[index]
+		if not seat.occupied:
 			seats[index].text = "%d Empty" % (index + 1)
 		else:
-			var title: String = ring.avatars[ring.slots[index].profile].name
-			seats[index].text = "%d %s %d%%" % [index + 1, title, roundi(ring.gas[index] * 100)]
-			seats[index].modulate = Color("ffcf50") if ring.firing[index] else Color.WHITE
+			seats[index].text = "%d %s %d%%" % [index + 1, seat.name, roundi(seat.gas * 100)]
+		seats[index].modulate = Color("ffcf50") if seat.firing else Color.WHITE
+	banner.visible = view.state in ["INTRO", "COUNTDOWN"] or view.falling or (view.state == "RACING" and view.race_time < 0.8)
+	if view.state == "INTRO":
+		banner.text = view.course.to_upper()
+	elif view.state == "COUNTDOWN":
+		banner.text = "READY, CREW?\n%d" % view.countdown
+	elif view.falling:
+		banner.text = "CREW OVERBOARD!\nReturning to checkpoint"
+	else:
+		banner.text = "LET'S TOOT!"
+	var key: String = "%s/%s" % [view.state, view.sound]
+	if key != panel_key:
+		panel_key = key
+		if view.state == "PAUSED":
+			panels.show_pause(view.sound, view.settings_save_error)
+		elif view.state == "FINISHED":
+			panels.show_result(view.result, view.course, view.next_available)
+		else:
+			panels.hide()

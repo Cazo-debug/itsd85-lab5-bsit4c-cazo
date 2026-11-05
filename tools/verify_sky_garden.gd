@@ -16,9 +16,15 @@ var crew_count: int = 1
 var seed_phase: int = 0
 var capture_prefix: String = "phase2_v3"
 var record_directory: String = ".bin/sky-record-jpg"
+var level_number: int = 1
+var assistants: bool = false
+var resume_on_focus: bool = false
+var focus_resumes: int = 0
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--level="):
+			level_number = clampi(int(argument.trim_prefix("--level=")), 1, 5)
 		if argument.begins_with("--crew="):
 			crew_count = clampi(int(argument.trim_prefix("--crew=")), 1, 4)
 		if argument.begins_with("--seed="):
@@ -29,6 +35,8 @@ func _initialize() -> void:
 			record_directory = argument.trim_prefix("--record-dir=")
 	captures = "--capture" in OS.get_cmdline_user_args()
 	recording = "--record" in OS.get_cmdline_user_args()
+	assistants = "--assistants" in OS.get_cmdline_user_args()
+	resume_on_focus = "--resume-on-focus" in OS.get_cmdline_user_args()
 	if recording:
 		DirAccess.make_dir_recursive_absolute("res://" + record_directory)
 	call_deferred("verify")
@@ -44,31 +52,42 @@ func capture(tag: String) -> void:
 		root.get_texture().get_image().save_png("res://docs/screenshots/%s_%s.png" % [capture_prefix, tag])
 
 func _process(_delta: float) -> bool:
-	if is_instance_valid(level) and level.race_time > 1:
+	if is_instance_valid(level) and level.state == level.State.RACING and level.race_time > 1:
 		var tick: int = Time.get_ticks_usec()
 		if previous_tick > 0:
 			frame_times.append((tick - previous_tick) / 1000.0)
 		previous_tick = tick
 		max_draw_calls = maxi(max_draw_calls, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
 		max_triangles = maxi(max_triangles, int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)))
+	else:
+		previous_tick = 0
 	return false
 
 func verify() -> void:
 	root.size = Vector2i(720, 1280)
 	var game: Node = root.get_node("GameState")
-	game.persistence_path = "user://sky_garden_verifier.cfg"
+	game.persistence_path = "user://course_verifier_%d_%d_%d%s.cfg" % [level_number, crew_count, seed_phase, "_assist" if assistants else ""]
+	game.current_level = level_number
+	game.unlocked_level = level_number
 	game.local_profiles = CrewData.default_profiles()
 	game.local_profiles[0] = AvatarData.default_avatar()
 	game.crew_slots = CrewData.default_slots()
 	for seat: int in range(crew_count):
 		game.local_profiles[seat].hat = seat
-		game.assign_slot(seat, "local", seat)
+		game.assign_slot(seat, "assist" if assistants and seat > 0 else "local", seat)
 	game.leader_profile = 0
-	level = load("res://scenes/levels/Level01.tscn").instantiate()
+	level = load(game.level_scene_path(level_number)).instantiate()
 	root.add_child(level)
 	current_scene = level
-	level.brain.all_seats = true
+	level.brain.all_seats = not assistants
 	level.brain.clock = seed_phase * 0.17
+	if assistants:
+		var driver: CrewBrain = CrewBrain.new()
+		driver.ring = level.player
+		driver.all_seats = true
+		driver.control_seat = 0
+		driver.clock = seed_phase * 0.17
+		level.add_child(driver)
 	for frame: int in range(3):
 		await process_frame
 	await capture("overview")
@@ -79,9 +98,12 @@ func verify() -> void:
 	var fractions: Array[float] = [0.12, 0.275, 0.36, 0.57, 0.68, 0.77, 0.88, 0.965]
 	var last_report: int = -1
 	var frame_count: int = 0
-	while level.state != level.State.FINISHED and frame_count < 15000:
+	while level.state != level.State.FINISHED and frame_count < ceili((level.time_limit + 15) * 60):
 		await physics_frame
 		frame_count += 1
+		if level.state == level.State.PAUSED and resume_on_focus:
+			level.toggle_pause()
+			focus_resumes += 1
 		level.hud.controls.enabled = false
 		var ratio: float = level.player.route_s / level.course.path.length
 		max_height = maxf(max_height, level.player.position.y)
@@ -100,14 +122,27 @@ func verify() -> void:
 	check(level.checkpoint_index == 2, "Both ordered checkpoints must be crossed")
 	check(max_height - min_height > 9.0, "Physical body failed to climb and descend")
 	check(not game.last_result.has("place"), "Cooperative result has a finishing place")
+	if DisplayServer.get_name() != "headless":
+		check(max_draw_calls > 0 and frame_times.size() > 60, "Rendered verification must collect real frame samples")
+		check(max_draw_calls < 150, "Rendered draw calls exceed the course budget")
+		check(max_triangles < 60000, "Rendered primitives exceed the course budget")
+	if "--result-capture" in OS.get_cmdline_user_args():
+		captures = true
 	await capture("result")
 	frame_times.sort()
 	var report: Dictionary = {"passed": not failed, "crew": crew_count, "seed": seed_phase, "seconds": level.race_time, "recoveries": level.player.recoveries, "contacts": level.player.contact_count, "max_tilt_degrees": rad_to_deg(level.player.peak_tilt), "height_min": min_height, "height_max": max_height, "pickups": level.pickups_collected, "max_draw_calls": max_draw_calls, "max_primitives": max_triangles, "headless": DisplayServer.get_name() == "headless", "recording": recording, "force_seconds": level.player.force_seconds}
+	report["level"] = level_number
+	report["course"] = level.definition.name
+	report["assistants"] = assistants
+	report["focus_resumes"] = focus_resumes
 	if not frame_times.is_empty():
 		report["frame_ms_median"] = frame_times[frame_times.size() / 2]
 		report["frame_ms_p95"] = frame_times[int(frame_times.size() * 0.95)]
 	print("RESULT ", JSON.stringify(report))
-	var output: FileAccess = FileAccess.open("res://.bin/sky_result_%d_%d.json" % [crew_count, seed_phase], FileAccess.WRITE)
+	var report_path: String = "res://.bin/sky_result_%d_%d.json" % [crew_count, seed_phase] if level_number == 1 else "res://.bin/course_result_%d_%d_%d.json" % [level_number, crew_count, seed_phase]
+	if assistants:
+		report_path = report_path.trim_suffix(".json") + "_assist.json"
+	var output: FileAccess = FileAccess.open(report_path, FileAccess.WRITE)
 	output.store_string(JSON.stringify(report, "\t"))
 	output.close()
 	for suffix: String in ["", ".tmp", ".pre-v2.bak"]:

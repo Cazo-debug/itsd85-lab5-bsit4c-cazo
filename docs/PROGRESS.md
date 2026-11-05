@@ -688,3 +688,91 @@ The production export preset is restored to ARMv7 + ARM64. The QA helper was uni
 All available automated work is complete. Gate 2 is not relabeled as fully accepted: the plan explicitly requires human play and physical-phone checks. Stop here; no campaign or networking implementation.
 
 Report and reproduction commands: [PHASE2_GATE2_QA.md](PHASE2_GATE2_QA.md).
+
+---
+
+# Phase 3: five cooperative courses and offline progression - 2026-11-05
+
+The user authorized Phase 3 after accepting **laptop-first validation with phone checks deferred**, and requested UI/gameplay separation so visual refactors mainly change UI files. This authorization advances implementation; it does not mark previous human/device checks as performed. Phase 4 has not started.
+
+## Delivered
+
+- Five playable original courses: retained Sky Garden plus Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit. Each has a distinct connected spline, widths/elevation, palette and hazard mix; two safe ordered checkpoints; holes and an ordered cooperative finish. All use the same SwimRing/RiderOrbit/RingPhysicsProfile/WaterStyle pipeline.
+- Added real moving spiked gates, rising/falling crushers, marked moving boulders and bounded whirlpool swirl/pull. Existing bumper/current/sweeper/mallet/crossbar and open holes remain. Motion is sampled only from `Level.race_time`; no hazard timers or RNG. Repeated current/whirlpool markings and gate spikes use MultiMesh. Whirlpools do not silently become lethal/reset zones.
+- Level Select displays locks, saved stars and best times. Completing each actual course unlocks only the next. Shared result shows Retry, Next when allowed, Menu and final-campaign completion. Failure offers no Next and awards no stars. Retry/Restart create fresh scenes with the original course budget; saves/settings/crew remain intact.
+- Complete Pause/Resume/Restart/Sound/Quit, focus/input cleanup, clear in-game save errors and Retry saving. Sound preference persists; actual SFX/music remain Phase 5. Contextual hints cover aiming/coasting, gas, exposed bridge edges, holes and whirlpools. Practice stays untimed and does not save campaign wins.
+- Removed Level 1 hardcoding from course loading and result saving. `CampaignFlow` owns launch/crew checks, campaign results, next-course validation, cards and settings persistence. `Level` coordinates the run and supplies detached HUD snapshots, without setting label text or styling.
+- Presentation lives in CrewHUD and `scripts/ui/`: course/settings views, pause/result panels and AIM/HOLD pad drawing/layout. `CrewInput` keeps input ownership and normalized requests; it delegates hit rectangles to the pad view. Styles are cached instead of recreated during every draw. Disabled pads no longer consume touches intended for panel buttons.
+- Preserved version-2 profiles, avatar alias, crew/leader, safe migration backup/temp-write handling, progress/star formula and online progression isolation. Transient `last_save_error` does not change the save schema. Failed-write coverage confirms the prior file survives and a subsequent retry persists the in-memory result.
+- Updated README, GDD, plan, credits and testing/architecture guides; retained historical captures and reference material.
+
+## Automated validation
+
+Required `tools/run_tests.sh`, Godot 4.7.2 standard / GUT 9.6.1:
+
+```text
+Scripts              16
+Tests                70
+Passing Tests        70
+Asserts            7425
+All tests passed!
+```
+
+New coverage: campaign/crew/lock validation, all five ordered results and fresh state load, final-course Next boundary, failure/practice/online/invalid-result isolation, save-error reporting/prior-file preservation, settings persistence, all-route slope/clearance/height/checkpoint/hole safety, exact ribbon-edge self-intersection rejection, deterministic new hazards, real solver contact and real open/closed collision windows, detached UI snapshots, UI lock cards, paused panel input over the hidden gas pad, one-time result commit and tutorial handling. No existing test/assertion was removed or weakened. Missing-storage warnings in the deliberate write-failure test are expected.
+
+All **45/45** headless legal-input cases passed: five courses x four crew sizes x seeds 1 and 3, plus one Local driver/three production Assistants at seed 7 for every course. Each case uses normal per-seat force/gas after spawn, actual rigid-body motion, both checkpoints and cooperative finish; no transform movement. Zero recoveries across the matrix. Contacts reached 18 in the hardest solo sample, so this is not collision-free teleport evidence.
+
+Seed 1 simulated racing seconds:
+
+| Course | One rider | Four riders | Matrix cases |
+|---|---:|---:|---:|
+| Sky Garden | 131.72 | 111.00 | 9 |
+| Canyon Switchbacks | 152.55 | 126.32 | 9 |
+| Cloud Bridges | 142.20 | 116.13 | 9 |
+| Spiral Springs | 161.30 | 132.23 | 9 |
+| Festival Summit | 155.22 | 125.67 | 9 |
+
+`verify_campaign_flow.gd`: **102 checks pass** through real menu mouse events, locked selection, pause clock/input cleanup, sound toggle/save, real Restart, a separately labeled 0.1-second timeout fixture/Retry, legal-input completion of all five courses in order, actual Next transitions and final Menu. One local-seat driver plus three production Assistants completed in 110.20 / 125.87 / 115.25 / 131.82 / 125.38 s with zero recoveries. This does not substitute for human input/feel assessment.
+
+A **second Godot process** passes **12 reload checks**: all five stars/times/unlocks, crew ownership, saved sound preference and final-course launch through UI. Complete mode leaves only its named disposable save; reload removes it. Preview fixtures now use a separate disposable save name. The player's normal save is untouched.
+
+The existing Gate 2 mouse/key/two-finger verifier passes **34 headless checks**: 110.32 s, 56 holds, 6,691 touch events, one contact and no recoveries. Its headless timing/camera counters do not establish rendered performance.
+
+## Rendered laptop evidence and performance
+
+All five course overview/play/pause/failure-result fixtures pass **36 rendered checks**. Captures use `phase3_preview_*` and were visually inspected. They deliberately place the hull; they are not course-completion evidence. Midcourse placed samples before the final cloud reduction reached 59-65 calls / 49,208-53,416 visible primitives. Successful full-run results are separately captured as `phase3_spiral_final_result.png` and `phase3_festival_final_result.png`, including Next and final-campaign boundary.
+
+Clean full rendered runs on Intel UHD Graphics, Compatibility, 720 x 1280, four riders, seed 4, no screenshot writes during racing or concurrent tests/exports:
+
+| Course | Finish s | Median ms | p95 ms | Max calls | Max primitives | Contacts / recoveries |
+|---|---:|---:|---:|---:|---:|---|
+| Spiral Springs | 131.83 | 16.661 | 18.346 | 71 | 58,128 | 2 / 0 |
+| Festival Summit | 125.73 | 16.673 | 17.763 | 74 | 57,225 | 8 / 0 |
+
+Both had zero focus-loss resumes. The driver can explicitly resume after focus loss when requested; ordinary application focus loss still pauses/clears input. Full-run timing excludes intro/countdown, pause and finished-state image writes. The verifier now fails rendered runs without frame samples or over 150 calls / 60k primitives. Desktop counters do not establish phone FPS or heat.
+
+Initial Spiral Springs profiling reached 60,144 primitives, just over budget. Reduced only distant cloud sphere rings from four to three: same cloud instances/positions and batching, with no route, collision, water-strip, crew, input or physics changes. Final Spiral peak is 58,128. Festival's peak also dropped from 59,241 to 57,225. No course variety or fourth rider was cut.
+
+## Build and decisions
+
+Phone handoff: `export/TootTubes-phase3-campaign-debug.apk`, **0.5.0-campaign / code 9**, **57,885,832 bytes**. Export succeeds and apksigner verifies v2/v3. Same package `com.itsd85.toottubes.prototype`, minimum API 24, ARMv7 + ARM64. Archive confirms Levels 01-05 and the three new UI modules; tests, tooling, addons, docs, reference pack/video, keystores and credentials are excluded. SHA-256: `7FF90EBC44E3D8D584A84EF77B30F02EDB1D2FF1F1F83422175EBD7EC4D4603E`.
+
+This phase keeps the established single-route CoursePath/ordered-checkpoint model. Spiral Springs uses connected spiral turns rather than branch choices; optional branch/reconnect exploration would need explicit route identity before adding shortcuts. UI work is a focused separation, not a framework rewrite: existing avatar/crew editing callbacks remain compatible. The original lab PDF is still absent, so eleven GDD headings/rubric alignment remain provisional.
+
+Laptop campaign execution has no service dependency: Net stays idle and Android internet/network-state permissions remain disabled. This is source/build and local execution evidence, not physical airplane-mode acceptance. No phone or emulator testing was attempted in Phase 3, per the laptop-first direction. Actual audio, LAN, release signing and publication were not started.
+
+## Gate 3 checklist
+
+- [x] Five original cooperative courses; one physical ring and shared movement/water.
+- [x] Locks, best stars/times, Result/Retry/Next/Menu and final-course boundary.
+- [x] Pause/Resume/Restart/Sound/Quit, contextual hints and documented UI/logic interfaces.
+- [x] Actual menu-driven lose/retry and ordered full campaign.
+- [x] Save/relaunch in a fresh process; crew/settings/progression preserved.
+- [x] Required tests, all-course 1-4 rider/assistant solvability, checkpoint/collision/recovery and rendered laptop checks.
+- [ ] Human feel/difficulty and physical-phone touch/Back/performance; deferred by user.
+- [ ] Physical airplane-mode completion/retry/relaunch; deferred by user.
+- [x] Progress/testing/architecture guides and commit `Phase 3: five cooperative courses and progression`.
+
+Stop here. Phase 3 logic/laptop work is complete; manual/device gates remain open. Phase 4 needs a separate execution instruction.
+
+Guides: [PHASE3_TESTING.md](PHASE3_TESTING.md), [UI_LOGIC_BOUNDARIES.md](UI_LOGIC_BOUNDARIES.md).
