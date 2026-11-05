@@ -105,6 +105,9 @@ func load_progress(path: String = SAVE_PATH) -> void:
 		for key: String in ["sound", "vibration", "show_fps"]:
 			if saved_settings.get(key) is bool:
 				settings[key] = saved_settings[key]
+		# Optional preference: preserve old settings dictionaries exactly during migration.
+		if saved_settings.get("reduced_motion") is bool:
+			settings.reduced_motion = saved_settings.reduced_motion
 		var volume: Variant = saved_settings.get("music_volume")
 		if (volume is float or volume is int) and is_finite(volume):
 			settings.music_volume = clampf(volume, 0.0, 1.0)

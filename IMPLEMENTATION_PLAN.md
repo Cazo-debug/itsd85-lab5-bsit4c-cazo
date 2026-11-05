@@ -2,7 +2,7 @@
 
 Revised 2026-11-01. Target: Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer.
 
-**Status (2026-11-05): Phases 1-4 implemented with laptop validation.** Five cooperative courses, offline progression and two-to-four-peer host-authoritative shared-ring LAN are available. Human/device and physical airplane-mode/LAN checks remain deferred under the user's laptop-first instruction; Phase 4's physical-phone gate stays open. See `docs/PROGRESS.md`, `docs/PHASE4_TESTING.md` and `docs/UI_LOGIC_BOUNDARIES.md`. Phase 5 has not started.
+**Status (2026-11-05): Phases 1-4 implemented; Phase 5 polish under local acceptance.** Five cooperative courses, offline progression, host-authoritative LAN, original audio and saved presentation settings are available. Current laptop evidence and remaining checks are in `docs/PHASE5_TESTING.md` and `docs/PROGRESS.md`. Physical airplane-mode/LAN, two phone performance classes and human acceptance remain pending. Phase 4's physical-phone gate and Phase 5's full acceptance stay open; no release has been published.
 
 The user has replaced the earlier competitive design with **one shared swim ring carrying up to four cooperating riders**, varied curved/elevated courses, repeated directional thrust and many obstacles. This document is the authoritative implementation plan; [ENVIRONMENT_SPEC.md](ENVIRONMENT_SPEC.md) defines geometry, movement and hazard behavior. User instructions take precedence. The old HTML sample is a visual reference, not a source of mandatory gameplay numbers. Previous plans are preserved under `docs/archive/` as historical material only.
 
@@ -271,6 +271,8 @@ Stop after Phase 4. Its laptop implementation is complete; physical-phone accept
 ### Phase 5: Polish and release
 
 Original sustained fart loops with attack/release, impacts/falls/pickups/UI/music, saved audio/quality settings, reduced camera shake, four-rider title/icon, attribution, device profiling, release signing, README, test matrix and human playtests. Retain tests plus net smoke, offline/online error cases, portrait/back/accessibility, private signing keys and explicit release publication checks. Check performance with all four riders firing amid moving hazards on at least two phone classes. Do not cut the required fourth rider, route variety or cooperative physics to meet an old schedule; reduce decorative cost first. Commit `Phase 5: cooperative polish and release`.
+
+Local implementation checkpoint, 2026-11-05: audio/settings/title/icon/notices, 85 GUT tests, 128 loopback LAN checks, four QA-runner safeguards and standalone Windows validation are complete. Android emulator behavior coverage is partial: 55 checks passed in a failed-render fixture; full Android rendering and physical ARM execution remain unverified. The implementation checkpoint is committed with the required message; **Phase 5 stays open** for working Android rendering, two phone performance classes, physical offline/Wi-Fi acceptance, human playtests and a publication decision. See `docs/PHASE5_TESTING.md`, `docs/ANDROID_EMULATOR_TESTING.md` and the latest `docs/PROGRESS.md` entry. No release was published.
 
 ## Lab traceability and validation status
 

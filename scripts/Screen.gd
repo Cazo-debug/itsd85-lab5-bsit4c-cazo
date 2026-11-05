@@ -15,6 +15,7 @@ var save_status: Label
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
+	Audio.play_music()
 	rng.randomize()
 	theme = preload("res://assets/GameTheme.tres")
 	var background: TextureRect = TextureRect.new()
@@ -60,6 +61,7 @@ func button(text: String, action: Callable, parent: Node = content) -> Button:
 	item.custom_minimum_size = Vector2(120, 120)
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	item.pressed.connect(action)
+	item.pressed.connect(Audio.play_sfx.bind("ui"))
 	parent.add_child(item)
 	return item
 

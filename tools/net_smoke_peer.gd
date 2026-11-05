@@ -36,6 +36,8 @@ var loss_hold_seen: bool = false
 var explicit_hold_seen: bool = false
 var loss_seat: int = 1
 var departing_seat: int = 1
+var explicit_received_at: int = 0
+var release_race_time: float = -1.0
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
@@ -168,30 +170,48 @@ func verify() -> void:
 			forged = true
 			net.rpc_id(1, "_input_state", {"seat": 0, "round": net.round_id, "seq": 10000, "direction": Vector3.FORWARD, "strength": 1.0, "held": true})
 		if net.round_id == 1:
-			if role == "host" and level.race_time > 0.5 and level.race_time < 1.1:
-				explicit_hold_seen = explicit_hold_seen or level.player.held[loss_seat]
-			if role != "host" and index == 1 and level.race_time > 1.2 and level.race_time < 2.5:
-				if net.input_enabled:
-					net.release_local()
-					net.input_enabled = false
-				continue
-			if role == "host" and not release_checked and level.race_time > 1.7:
-				release_checked = true
-				check(explicit_hold_seen and not level.player.held[loss_seat] and not net.gate.expired(loss_seat, Time.get_ticks_msec()), "Explicit release stops held thrust before expiry")
-			if role != "host" and level.race_time >= 2.5 and level.race_time < 3:
-				net.input_enabled = true
-			if role != "host" and index == 1 and level.race_time > 3 and level.race_time < 9:
-				if level.race_time < 4:
+			# Synchronize on observed packets, not narrow race-clock windows. Guest
+			# interpolation and process scheduling can legitimately lag the host.
+			if role == "host" and not release_checked:
+				if not explicit_hold_seen and level.player.held[loss_seat]:
+					explicit_hold_seen = true
+					explicit_received_at = int(net.gate.received_at[loss_seat])
+					write_marker("explicit-held.flag", "held")
+				if explicit_hold_seen and FileAccess.file_exists(output + "/explicit-sent.flag") and not level.player.held[loss_seat] and int(net.gate.received_at[loss_seat]) > explicit_received_at:
+					release_checked = true
+					check(not net.gate.expired(loss_seat, Time.get_ticks_msec()), "Explicit release stops held thrust before expiry")
+					release_race_time = level.race_time
+					write_marker("explicit-received.flag", str(release_race_time))
+				elif Time.get_ticks_msec() - round_started_at > 8000:
+					check(false, "Explicit held/release packet handshake timed out")
+					await finish()
+					return
+			if role != "host" and index == 1 and release_race_time < 0:
+				if FileAccess.file_exists(output + "/explicit-received.flag"):
+					release_race_time = float(FileAccess.get_file_as_string(output + "/explicit-received.flag"))
+					net.input_enabled = true
+				elif FileAccess.file_exists(output + "/explicit-held.flag"):
+					if net.input_enabled:
+						net.release_local()
+						net.input_enabled = false
+						write_marker("explicit-sent.flag", "sent")
+					continue
+				else:
+					net.submit_input(net.local_seat(), level.course.path.sample(level.player.route_s + 5).tangent, 1.0, true)
+					continue
+			var probe_time: float = level.race_time - release_race_time if release_race_time >= 0 else -1.0
+			if role != "host" and index == 1 and probe_time >= 0 and probe_time < 6:
+				if probe_time < 1:
 					net.submit_input(net.local_seat(), level.course.path.sample(level.player.route_s + 5).tangent, 1.0, true)
 				elif net.input_enabled:
 					net.send_input()
 					net.input_enabled = false # Deliberately lose the release and all refresh packets.
 				continue
-			if role == "host" and level.race_time > 3 and level.race_time < 6:
+			if role == "host" and probe_time >= 0 and probe_time < 3:
 				loss_hold_seen = loss_hold_seen or level.player.held[loss_seat]
-			if role != "host" and level.race_time >= 9:
+			if role != "host" and probe_time >= 6:
 				net.input_enabled = true
-			if role == "host" and not expiry_checked and level.race_time > 5.5 and level.race_time < 8.5 and net.gate.expired(loss_seat, Time.get_ticks_msec() - 80):
+			if role == "host" and not expiry_checked and probe_time > 2.5 and probe_time < 5.5 and net.gate.expired(loss_seat, Time.get_ticks_msec() - 80):
 				expiry_checked = true
 				check(loss_hold_seen and not level.player.held[loss_seat], "Lost release expires on host without sticking thrust")
 		else:
@@ -234,6 +254,12 @@ func count_rings(node: Node) -> int:
 	for child: Node in node.get_children(): count += count_rings(child)
 	return count
 
+func write_marker(filename: String, value: String) -> void:
+	var file: FileAccess = FileAccess.open(output + "/" + filename, FileAccess.WRITE)
+	if file:
+		file.store_string(value)
+		file.close()
+
 func finish() -> void:
 	check(FileAccess.get_file_as_string(save_path) == original, "Offline save remains byte-for-byte unchanged")
 	if net.active: net.close_session()
@@ -244,4 +270,7 @@ func finish() -> void:
 	if file: file.store_string(JSON.stringify(report, "\t")); file.close()
 	for suffix: String in ["", ".tmp", ".pre-v2.bak"]: DirAccess.remove_absolute(save_path + suffix)
 	print(JSON.stringify(report))
+	# Let queued mixer stop commands retire before tearing down the audio server.
+	root.get_node("Audio").stop_all()
+	await create_timer(0.12, true, false, true).timeout
 	quit(0 if failures.is_empty() else 1)

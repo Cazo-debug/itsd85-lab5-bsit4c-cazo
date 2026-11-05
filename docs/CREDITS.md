@@ -6,7 +6,7 @@
 - GUT 9.6.1: Butch Wesley and contributors, MIT. Source: https://github.com/bitwes/Gut/releases/tag/v9.6.1 . License committed at `addons/gut/LICENSE.md`.
 - GUT's bundled development UI includes Anonymous Pro (Mark Simonson), Courier Prime (Quote-Unquote Apps / Alan Dague-Greene), Lobster Two (Pablo Impallari) and a Source Code Pro bitmap font (Adobe). These are development-tool assets under SIL OFL, not game artwork; upstream font notice is at `addons/gut/fonts/OFL.txt`. Exclude test tooling from the eventual release export.
 - Godot Engine 4.7.2: Godot Engine contributors, MIT. https://godotengine.org/license/ . Editor binary is downloaded locally into ignored `.bin/` and is not committed. Preserve Godot notices in eventual exports.
-- Audio: no audio assets included in Phase 1. Original generated effects and optional CC0 music are Phase 5 work; credit any supplied music before inclusion.
+- Audio: no audio assets were included in Phase 1. Current Phase 5 original synthesized effects/music are credited below; no external recordings are used.
 
 Additional bundled GUT font copyright/license notices are preserved in `docs/licenses/` from the corresponding Google Fonts OFL family directories.
 
@@ -25,3 +25,5 @@ Phase 2 feedback revision (2026-11-02): original lit procedural water shader, sh
 Phase 3 (2026-11-05): original Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit route data, palette variations, procedural crushers, spiked sliding gates, marked boulders and batched whirlpool/current markings; campaign, result and pause presentation. Reuses the existing original rider/water/scenery systems and OFL Fredoka font. No downloaded artwork, models, textures, audio or new third-party assets.
 
 Phase 4 (2026-11-05): original LAN lobby, mode/result presentation and `docs/screenshots/phase4_mode_select.png`, `phase4_lobby_four.png`, `phase4_shared_result.png`, rendered from the existing original procedural game artwork with OFL Fredoka. ENet support is supplied by Godot under its existing license. No new third-party media, models, textures or audio.
+
+Phase 5 (2026-11-05): original four-rider vector icon at `assets/icons/toot_tubes.svg`; original synthesized mono WAV assets at `assets/audio/`: `thrust_attack`, `thrust_loop`, `thrust_release`, `impact`, `fall`, `pickup`, `ui`, `checkpoint`, `win`, `timeout` and `sky_theme`. All are reproducible with `tools/generate_audio.py`; the repeating melody is an original procedural composition. No recordings, downloaded samples or commercial game media were used. The new title/settings/feedback presentation reuses the original procedural meshes and OFL Fredoka. In-game Credits includes `assets/licenses/NOTICE.txt`, full Fredoka OFL text and the engine's own MIT/third-party notices.

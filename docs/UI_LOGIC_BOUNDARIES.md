@@ -45,6 +45,10 @@ Online members/avatars live in `Net`, separately from `GameState.local_profiles`
 
 ## Regression commands
 
+Phase 5 keeps preference validation/persistence and quality application in `SettingsFlow.gd`; `SettingsScreen.gd` only presents controls and save status. `RunFeedback.gd` observes actual run/seat state to request sounds, vibration and presentation preferences. `Audio.gd` owns voice envelopes, mixer playback, focus and sound preferences. These modules do not integrate forces, move hazards or award progression. `TitleScreen.gd` presents the shared crew. `BuildCheck.gd` is an explicitly opted-in developer harness (`--build-check`), with isolated storage and no normal navigation action. Its packaged Windows run verifies the same UI/settings/audio contract as source.
+
+`AndroidCheck.gd` is a separate opt-in debug probe with a private QA marker and isolated save. The native-input mode reports real controller/physics state without steering. A separately labeled solve mode uses the existing `CrewBrain` and a 3x clock. `tools/run_android_checks.py` owns native event injection, assertions, screenshots/log inspection and read-only emulator lifecycle; it rejects phone serials. These test modes have no ordinary player navigation action, and release Android builds ignore the private debug marker.
+
 ```powershell
 & 'C:\Program Files\Git\bin\bash.exe' tools/run_tests.sh
 & .\.bin\Godot_v4.7.2-stable_win64_console.exe --headless --path . --fixed-fps 60 --script tools/verify_campaign_flow.gd

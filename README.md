@@ -1,12 +1,14 @@
 # Toot Tubes
 
-**Updated 2026-11-05: Phase 4 LAN implemented and checked on the laptop.** Five curved, elevated courses share one physical ring and 1-4 cooperating riders. Two-to-four-peer LAN adds a ready lobby, host-owned simulation, interpolated guests, shared results/rematch and safe disconnect handling. Offline campaign/profiles stay separate. Physical two-phone/four-phone, human play and airplane-mode acceptance remain deferred. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
+**Updated 2026-11-05: Phase 5 polish is under local acceptance.** Five curved, elevated courses share one physical ring and 1-4 cooperating riders. Host-authoritative LAN, original sustained audio/music, saved quality/motion settings and a four-rider title are available. Physical two-phone/four-phone play, phone performance and human acceptance remain pending. [Local checks and remaining gates](docs/PHASE5_TESTING.md) | [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
 
-Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. Courses, riders and scenery use original procedural artwork. Finished audio and release polish remain Phase 5.
+Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. Courses, riders, scenery, icon and synthesized audio are original project work. Local build candidates are available; nothing has been published.
 
 ## Run the updated game
 
 Open `project.godot` in Godot and press **F5**. Choose **Tap to start -> Play -> Offline crew** to configure your crew, then **Start Sky Garden**. First-time players create/save a rider first. **Courses** on Main Menu or **Choose course** in the crew options opens Level Select; finish each course to unlock the next. **Practice** beside Start uses the first course without a timer; **Next area** moves between its seven sections.
+
+To play without the editor, open **`export/TootTubes-0.7.0-rc1.exe`**. Settings includes sound, music volume, high/low quality, vibration, reduced motion and FPS display. Low quality reduces decoration while preserving the four-rider physics and courses.
 
 For LAN, use **Play -> Host LAN crew** in one copy and **Join LAN crew** in the others. Enter `127.0.0.1` for another copy on this laptop, or the host's displayed Wi-Fi IP from another device. Guests mark Ready and the host starts. Everyone controls their assigned rider on the same ring. Any rider can pause; the host resumes/restarts/recovers. Switching laptop windows can pause the shared run through focus-loss handling. [LAN instructions and checks](docs/PHASE4_TESTING.md).
 
@@ -33,7 +35,7 @@ Existing version-2 profiles/progress are preserved. Original save migration back
 
 ## Android and verification
 
-Updated build: `export/TootTubes-phase4-lan-debug.apk` (0.6.0-lan, code 10). Earlier APKs remain separate. The export folder is intentionally ignored by Git. [Phase 4 QA and phone checklist](docs/PHASE4_TESTING.md).
+Current development APK: `export/TootTubes-phase5-debug.apk` (0.7.0-rc1, code 11). Local release candidate: `export/TootTubes-0.7.0-rc1-release.apk`, using a separate package identity. Build/signature checks do not establish Android runtime acceptance. Earlier APKs remain separate. The export folder is intentionally ignored by Git. [Phase 5 checks and phone checklist](docs/PHASE5_TESTING.md).
 
 ```powershell
 .\tools\run_tests.ps1
@@ -43,6 +45,8 @@ Updated build: `export/TootTubes-phase4-lan-debug.apk` (0.6.0-lan, code 10). Ear
 ```
 
 Git Bash/Linux: `bash tools/run_tests.sh`. Tests and verification tools use disposable save files.
+
+[Android emulator checks](docs/ANDROID_EMULATOR_TESTING.md) cover native two-finger input, Back/Home, reinstall/relaunch and a separate scripted offline run. The installed emulator currently fails rendering acceptance; its 55 passing behavior checks are recorded separately. Phone APKs remain ARM builds; the x86-64 emulator fixture stays in `.bin/`.
 
 See [the Phase 3 testing guide](docs/PHASE3_TESTING.md) for campaign checks, fresh-process reload, captures, profiling and deferred phone steps. [UI/gameplay boundaries](docs/UI_LOGIC_BOUNDARIES.md) identifies where visual changes belong. [Progress](docs/PROGRESS.md) separates automated/rendered results from pending human/device gates. The earlier uninterrupted **scripted** Sky Garden recording remains `export/TootTubes-phase2-water-riders-demo.mp4`.
 

@@ -11,7 +11,8 @@ func _ready() -> void:
 
 func show_panel(title: String, detail: String, actions: Array[Array]) -> void:
 	if panel:
-		remove_child(panel)
+		# Keep retiring panels parented until deferred deletion, including scene exit.
+		panel.hide()
 		panel.queue_free()
 	panel = PanelContainer.new()
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -40,6 +41,7 @@ func show_panel(title: String, detail: String, actions: Array[Array]) -> void:
 		button.text = item[0]
 		button.custom_minimum_size.y = 120
 		button.pressed.connect(action_requested.emit.bind(item[1]))
+		button.pressed.connect(Audio.play_sfx.bind("ui"))
 		box.add_child(button)
 	show()
 

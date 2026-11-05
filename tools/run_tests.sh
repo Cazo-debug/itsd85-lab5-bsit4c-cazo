@@ -15,4 +15,4 @@ if [ ! -f "$GODOT" ] && ! command -v "$GODOT" >/dev/null 2>&1; then
   bash tools/setup_godot.sh
 fi
 "$GODOT" --headless --path . --editor --import
-"$GODOT" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit
+"$GODOT" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gpost_run_script=res://tools/finish_tests.gd -gexit

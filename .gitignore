@@ -8,3 +8,5 @@ export/
 *.jks
 export_credentials.cfg
 .bin/
+__pycache__/
+*.py[cod]

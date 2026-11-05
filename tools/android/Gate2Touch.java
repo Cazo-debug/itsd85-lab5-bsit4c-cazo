@@ -77,6 +77,7 @@ public final class Gate2Touch extends Instrumentation {
             float ax = number("aim_x", 240), ay = number("aim_y", 2000);
             float gx = number("gas_x", 840), gy = number("gas_y", 2100);
             float endX = number("end_x", ax), endY = number("end_y", ay);
+            float gasEndX = number("gas_end_x", gx), gasEndY = number("gas_end_y", gy);
             int duration = Math.max(100, Math.min(10000, (int)number("duration_ms", 1500)));
             int rest = Math.max(300, Math.min(4000, (int)number("rest_ms", 1200)));
             int cycles = Math.max(1, Math.min(20, (int)number("cycles", 1)));
@@ -87,7 +88,7 @@ public final class Gate2Touch extends Instrumentation {
                 send(MotionEvent.ACTION_POINTER_DOWN | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, ax, ay, gx, gy);
                 long start = SystemClock.uptimeMillis();
                 long nextFocusCheck = start + 250;
-                float x = ax, y = ay;
+                float x = ax, y = ay, gasX = gx, gasY = gy;
                 while (SystemClock.uptimeMillis() - start < duration) {
                     if (SystemClock.uptimeMillis() >= nextFocusCheck) {
                         requireGameForeground();
@@ -96,11 +97,13 @@ public final class Gate2Touch extends Instrumentation {
                     float fraction = Math.min(1, (SystemClock.uptimeMillis() - start) / (float)duration);
                     x = ax + (endX - ax) * fraction;
                     y = ay + (endY - ay) * fraction;
-                    send(MotionEvent.ACTION_MOVE, 2, x, y, gx, gy);
+                    gasX = gx + (gasEndX - gx) * fraction;
+                    gasY = gy + (gasEndY - gy) * fraction;
+                    send(MotionEvent.ACTION_MOVE, 2, x, y, gasX, gasY);
                     SystemClock.sleep(50);
                 }
-                send(MotionEvent.ACTION_POINTER_UP | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, x, y, gx, gy);
-                send(MotionEvent.ACTION_UP, 1, x, y, gx, gy);
+                send(MotionEvent.ACTION_POINTER_UP | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT), 2, x, y, gasX, gasY);
+                send(MotionEvent.ACTION_UP, 1, x, y, gasX, gasY);
                 SystemClock.sleep(rest);
             }
             result.putString("passed", "true");

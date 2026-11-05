@@ -6,6 +6,7 @@ var path: CoursePath
 var overview: bool = true
 var look_position: Vector3
 var heading: Vector3 = Vector3.FORWARD
+var reduced_motion: bool = true
 
 func _ready() -> void:
 	current = true
@@ -37,7 +38,8 @@ func _process(delta: float) -> void:
 		return
 	var frame: Dictionary = path.sample(ring.route_s + 5)
 	var tangent: Vector3 = frame.tangent.slide(Vector3.UP).normalized()
-	heading = heading.slerp(tangent, 1.0 - exp(-2.8 * delta)).normalized()
+	# No impact shake. Reduced motion also softens yaw at tight bends.
+	heading = heading.slerp(tangent, 1.0 - exp(-(1.8 if reduced_motion else 2.8) * delta)).normalized()
 	var at: Vector3 = ring.get_global_transform_interpolated().origin
 	# Keep the camera above the route during a fall so the drop stays visible.
 	var camera_base: Vector3 = Vector3(at.x, maxf(at.y, frame.position.y), at.z)

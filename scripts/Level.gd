@@ -23,6 +23,7 @@ var practice_index: int = 0
 var result: Dictionary = {}
 var settings_save_error: Error = OK
 var online: bool = false
+var feedback: RunFeedback
 
 func _ready() -> void:
 	online = Net.active and Net.phase == "loading"
@@ -75,6 +76,9 @@ func _ready() -> void:
 			player.collision_layer = 0
 			player.collision_mask = 0
 		Net.attach_level(self)
+	feedback = RunFeedback.new()
+	feedback.level = self
+	add_child(feedback)
 	hud.present(run_snapshot())
 
 func _physics_process(delta: float) -> void:
@@ -126,6 +130,7 @@ func run_snapshot() -> Dictionary:
 		"next_available": CampaignFlow.next_level(GameState, result) > 0,
 		"online": online, "host": Net.hosting if online else true,
 		"waiting": online and not Net.run_ready,
+		"show_fps": GameState.settings.get("show_fps", false), "fps": Engine.get_frames_per_second(),
 		"hint": CourseHints.for_run(course.path, player.route_s, player.gas[clampi(local_seat, 0, 3)], player.falling)}
 
 func begin_run() -> void:

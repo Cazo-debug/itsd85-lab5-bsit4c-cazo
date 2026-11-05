@@ -20,6 +20,8 @@ var level_number: int = 1
 var assistants: bool = false
 var resume_on_focus: bool = false
 var focus_resumes: int = 0
+var quality: String = "high"
+var four_firing_frames: int = 0
 
 func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
@@ -33,6 +35,8 @@ func _initialize() -> void:
 			capture_prefix = argument.trim_prefix("--capture-prefix=").validate_filename()
 		if argument.begins_with("--record-dir=.bin/") and not argument.contains(".."):
 			record_directory = argument.trim_prefix("--record-dir=")
+		if argument in ["--quality=low", "--quality=high"]:
+			quality = argument.trim_prefix("--quality=")
 	captures = "--capture" in OS.get_cmdline_user_args()
 	recording = "--record" in OS.get_cmdline_user_args()
 	assistants = "--assistants" in OS.get_cmdline_user_args()
@@ -53,6 +57,8 @@ func capture(tag: String) -> void:
 
 func _process(_delta: float) -> bool:
 	if is_instance_valid(level) and level.state == level.State.RACING and level.race_time > 1:
+		if level.player.firing.count(true) == 4:
+			four_firing_frames += 1
 		var tick: int = Time.get_ticks_usec()
 		if previous_tick > 0:
 			frame_times.append((tick - previous_tick) / 1000.0)
@@ -66,6 +72,8 @@ func _process(_delta: float) -> bool:
 func verify() -> void:
 	root.size = Vector2i(720, 1280)
 	var game: Node = root.get_node("GameState")
+	game.settings = game.DEFAULT_SETTINGS.duplicate()
+	game.settings.quality = quality
 	game.persistence_path = "user://course_verifier_%d_%d_%d%s.cfg" % [level_number, crew_count, seed_phase, "_assist" if assistants else ""]
 	game.current_level = level_number
 	game.unlocked_level = level_number
@@ -126,6 +134,8 @@ func verify() -> void:
 		check(max_draw_calls > 0 and frame_times.size() > 60, "Rendered verification must collect real frame samples")
 		check(max_draw_calls < 150, "Rendered draw calls exceed the course budget")
 		check(max_triangles < 60000, "Rendered primitives exceed the course budget")
+		if crew_count == 4:
+			check(four_firing_frames > 60, "Rendered profiling must sample all four riders firing")
 	if "--result-capture" in OS.get_cmdline_user_args():
 		captures = true
 	await capture("result")
@@ -135,6 +145,8 @@ func verify() -> void:
 	report["course"] = level.definition.name
 	report["assistants"] = assistants
 	report["focus_resumes"] = focus_resumes
+	report["quality"] = quality
+	report["four_firing_frames"] = four_firing_frames
 	if not frame_times.is_empty():
 		report["frame_ms_median"] = frame_times[frame_times.size() / 2]
 		report["frame_ms_p95"] = frame_times[int(frame_times.size() * 0.95)]
@@ -142,9 +154,13 @@ func verify() -> void:
 	var report_path: String = "res://.bin/sky_result_%d_%d.json" % [crew_count, seed_phase] if level_number == 1 else "res://.bin/course_result_%d_%d_%d.json" % [level_number, crew_count, seed_phase]
 	if assistants:
 		report_path = report_path.trim_suffix(".json") + "_assist.json"
+	if quality == "low":
+		report_path = report_path.trim_suffix(".json") + "_low.json"
 	var output: FileAccess = FileAccess.open(report_path, FileAccess.WRITE)
 	output.store_string(JSON.stringify(report, "\t"))
 	output.close()
 	for suffix: String in ["", ".tmp", ".pre-v2.bak"]:
 		DirAccess.remove_absolute(game.persistence_path + suffix)
+	root.get_node("Audio").stop_all()
+	await create_timer(0.12, true, false, true).timeout
 	quit(1 if failed else 0)

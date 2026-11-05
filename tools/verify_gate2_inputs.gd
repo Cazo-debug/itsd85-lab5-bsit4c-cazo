@@ -171,6 +171,8 @@ func verify() -> void:
 	change_scene_to_file("res://scenes/ui/MainMenu.tscn")
 	await frames(6)
 	await click("Play")
+	check(current_scene.name == "ModeSelect", "Mouse events must open Mode Select")
+	await click("Offline crew")
 	check(current_scene.name == "CrewSetup", "Mouse events must open Crew Setup")
 	await click("Start Sky Garden")
 	check(current_scene.name == "Level01", "Mouse events must launch the production course")
@@ -272,4 +274,6 @@ func verify() -> void:
 	output.close()
 	for suffix: String in ["", ".tmp", ".pre-v2.bak"]:
 		DirAccess.remove_absolute(SAVE + suffix)
+	root.get_node("Audio").stop_all()
+	await create_timer(0.12, true, false, true).timeout
 	quit(1 if failed else 0)

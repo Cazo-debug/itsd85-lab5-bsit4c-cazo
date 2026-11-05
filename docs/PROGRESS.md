@@ -821,3 +821,86 @@ No router/firewall settings were changed, no external service was used, and no r
 - [x] Update docs and commit `Phase 4: four-player shared-ring LAN co-op`.
 
 Stop after Phase 4. [PHASE4_TESTING.md](PHASE4_TESTING.md) contains laptop instructions and the remaining device checklist. Physical gates remain open; Phase 5 needs a separate execution instruction.
+
+---
+
+# Phase 5: laptop acceptance of current polish (2026-11-05)
+
+The user asked to establish everything that can be tested here before device acceptance. The worktree already contained Phase 5 audio/settings/title/build changes. This pass inspected and tested those changes, repaired verification/build issues, and documented the current candidates. It does not close the physical-phone/human gates or claim release publication. Existing unrelated work, reference video/pack docs and the preexisting `project.godot` edit were preserved.
+
+## Available polish and boundaries
+
+Original synthesized sustained thrust loops have per-seat attack/release envelopes, with impacts, falls, pickups, checkpoint/result/UI effects and original looping music. Saved controls cover master sound, music volume, high/low quality, vibration, reduced motion and FPS. The four-rider title and original SVG icon use the established primitive models. Full Fredoka OFL and Godot/third-party license notices are accessible in Credits and bundled with the builds.
+
+`SettingsFlow` owns preference validation/save and decorative quality application; settings UI only presents controls/status. `RunFeedback` observes actual run/seat state for audio/haptics and quality/motion. `Audio` owns playback/envelopes/focus. Physics, gas, route/hazards, seat ownership and campaign progression remain in their existing modules. Replication includes contact/pickup counters for guest feedback. Low quality preserves all four riders, physical geometry/collision, hazards, mass and gas; it reduces clouds and particles only. See [UI_LOGIC_BOUNDARIES.md](UI_LOGIC_BOUNDARIES.md).
+
+## Fresh local evidence
+
+- Required `tools/run_tests.sh`: **85 tests / 7,807 assertions / 21 suites pass**, `.bin/phase5-local-tests-final.log`. The deliberate invalid-save test emits its expected warning. Final run has no resource-leak/runtime errors; assertions were not removed or weakened.
+- Required `tools/net_smoke.sh`: **128 checks pass**, `.bin/phase5-local-net-fixed.log` and `.bin/phase4-validation/20261105-145503/`. Host + 1 guest then host + 3 guests finish with identical shared results, both checkpoints, real force from every seat and no recoveries. Results also cover spoof rejection, explicit release, dropped refresh expiry, pause/rematch, guest vacancy, deliberate host exit, unreachable IP, abrupt host kill and byte-identical disposable offline saves.
+- `verify_campaign_flow.gd`: **102 checks** through actual menu events, pause/restart, timeout/retry fixture and all five normal-input course completions; **12 checks** in a separate reload process. Course times: **110.20 / 125.87 / 115.25 / 131.82 / 125.38 s**, all with zero recoveries. `.bin/phase5-campaign.log`, `phase5-campaign-flow.json`, `phase5-reload.log`, `phase5-reload-flow.json`.
+- `verify_gate2_inputs.gd`: **36 checks**, **6,691 synthetic touch events plus mouse/key checks**, **56 held thrust presses**, Sky Garden **110.32 s**, one contact and zero recoveries. `.bin/phase5-input-final.log`, `.bin/gate2-input-result.json`. This headless run does not establish Android touch, rendering FPS or camera framing acceptance.
+- `BuildCheck.gd`: **39 checks** for navigation, four title riders, scrollable settings, persistence reload, bundled notices, four low-quality riders with real fourth-seat force, FPS display, pause audio cleanup and actual non-silent mixed PCM. The mixer stress check explicitly verifies four voices sustaining at full gain while music plays; its isolated observer cannot silently cancel the voices.
+- `verify_portable.py`: the **same 39 checks pass headless and rendered in the release EXE**, copied into a fresh temporary folder containing only that executable. Reports `.bin/phase5-portable-headless.json`, `.bin/phase5-portable-rendered.json`; logs of the same names. Rendered audio uses WASAPI; headless uses Dummy, both exercising the engine mixer. No microphone recording is involved. Captures `.bin/phase5_title.png`, `phase5_settings.png`, `phase5_pause_low_quality.png` were visually inspected. Listening quality remains a human check.
+
+## Four-rider rendered performance
+
+Festival Summit full normal-input runs, seed 4, Compatibility, Intel UHD Graphics, 720 x 1280, 60 FPS cap. No concurrent tests/exports or screenshot writes during racing. Both crossed the ordered checkpoints, completed in **125.73 s**, produced real force from all four seats, had eight contacts and **zero recoveries/focus resumes**.
+
+| Quality | Median ms | p95 ms | Peak draw calls | Peak visible primitives | Frames with four firing |
+|---|---:|---:|---:|---:|---:|
+| High | 16.665 | 17.079 | 74 | 57,225 | 4,814 |
+| Low | 16.666 | 17.188 | 73 | 47,305 | 4,815 |
+
+Reports `.bin/course_result_5_4_4.json` and `_low.json`; logs `.bin/phase5-profile-high.log` and `phase5-profile-low.log`. Both pass the 150-call / 60k-primitive budgets. Low quality reduces peak visible primitives by about **17%**, retaining identical simulated physics/force/gas results. Both already sit near the laptop's 60 FPS cap; no claim about phone FPS, heat or low-quality speedup follows.
+
+## Verification/build fixes and local candidates
+
+The first LAN run caught an explicit-release fixture tied to narrow race-clock windows. The fixture now waits for a host-observed held packet, sends a real reliable guest release and requires the host to observe fresh release before expiry, with a finite timeout. The lost-refresh fixture still requires observed held state and actual host expiry. No network/physics rules were relaxed.
+
+The old input-event verifier skipped the Phase 4 Mode Select screen; it now clicks Offline crew and asserts both navigation stages. GUT's new post-run hook and UI/network verifiers stop audio and wait for queued mixer cleanup before exit. These changes address shutdown resource errors without filtering errors or changing test results.
+
+The release EXE ignored the editor-style `--script` check and simply opened Title. `BuildCheck` now runs as a Node behind an explicit `--build-check` user argument in Title startup. The portable runner deletes old reports before launch and validates real standalone output; normal player navigation has no test action. The signing builder now trims a trailing newline in the encrypted credential file so an existing protected local signing identity can be reused.
+
+Current candidates are **0.7.0-rc1 / code 11**: `export/TootTubes-phase5-debug.apk`, `export/TootTubes-0.7.0-rc1-release.apk`, `export/TootTubes-0.7.0-rc1.exe`. The release APK uses the separate `com.itsd85.toottubes` package; debug retains `com.itsd85.toottubes.prototype`. Both APKs are ARMv7 + ARM64, minimum API 24 / target 36, with v2/v3 signatures verified. Archive inspection confirms runtime modules, all 11 audio assets, icon and full notices; tooling/tests/docs/reference media/signing material are excluded. `export/phase5-builds.json` records final sizes/hashes. Exports and signing material are ignored; private credentials stay outside the repository. The portable Windows EXE is not publisher-code-signed. No publication, phone control, emulator installation, router or firewall changes were performed.
+
+## Gate 5 status
+
+- [x] Local audio/settings/title/icon/notices polish available and validated.
+- [x] Required tests, campaign/reload, controls, multi-process LAN and standalone UI/mixer checks pass.
+- [x] High/low four-rider laptop rendering budgets pass; local candidates/signatures/resources verified.
+- [ ] Two physical phone classes: four riders firing amid hazards, sustained FPS/frame pacing and heat.
+- [ ] Android install/upgrade, touch/Back/Home/resume/vibration and offline airplane-mode campaign/save acceptance.
+- [ ] Physical two-phone/four-phone Wi-Fi play, shared finish/rematch and interruptions.
+- [ ] Human camera/steering/visual/audio/difficulty review, final phase handoff/commit and release publication decision.
+
+**Phase 5 remains open.** This is a local validation checkpoint; current Phase 5 work and these verification fixes remain uncommitted pending phase handoff. The original lab rubric PDF is still unavailable. [PHASE5_TESTING.md](PHASE5_TESTING.md) contains reproducible commands and the remaining device checklist.
+
+## Phase 5 continuation: Android behavior checks and implementation handoff
+
+The user's `continue` instruction retained laptop-first validation. Added `AndroidCheck.gd`, an opt-in debug probe with an isolated save and a private QA marker; the public launcher's security policy ignores arbitrary command-line extras. Added a separate x86-64 `Android Emulator QA` preset, an explicit-emulator-only runner, native HOLD drag-out support in the existing instrumentation helper, blank-capture/runtime-error rejection, bounded startup retries and read-only emulator configuration restoration. Ordinary player navigation and phone ARM presets retain their existing behavior. No environment, physics, rider-count or thrust rules changed.
+
+**Android result is partial, not an accepted rendered game.** A software-rendered x86-64 fixture passed **55 behavior checks**: Android menu taps/Back, saved settings across same-version reinstall/relaunch, four riders, native two-pointer ownership with actual force/gas drain, release and HOLD drag-out, Home/resume input/audio cleanup, separate 3x scripted airplane-mode completion, both checkpoints, force from all four seats, cooperative save and reloaded stars/time/unlock. However, all captures were flat blue and Godot logged shader errors. `.bin/phase5-android-logic-only.json` explicitly records `logic_passed: true`, `passed: false` and failed rendering. This is not physical-touch, phone-performance or four-human evidence.
+
+ARM execution on the installed Android 11 emulator failed in its old translation layer with an unsupported instruction. Software rendering produced a shader failure matching [Godot issue 109550](https://github.com/godotengine/godot/issues/109550). A lower light-capacity experiment did not fix it and was reverted. Host GPU mode with dynamic GLES detection reached GLES 3.1 without the earlier shader error but did not reach Title within 120 seconds. ANGLE fell back to SwiftShader on this SDK and also failed final startup acceptance. Final reports remain failed. Do not use the earlier 55 positive checks to claim that Android graphics work.
+
+The runner now requires nonblank central screenshot content and rejects Godot/runtime fatal errors. It captures failure evidence and removes its debug marker before closing its managed emulator session. `tools/test_android_checks.py` has **four passing device-free regression tests**: physical serial refusal before any ADB command, flat-frame rejection, nonblank-frame acceptance and byte-identical configuration restoration after startup failure. The negative render fixture intentionally emits a rejected-frame message; the unittest result is `OK`.
+
+All original AVD userdata/encryption images retain their original lengths/SHA-256 hashes, and the original configuration is restored byte for byte: `.bin/phase5-emulator-preservation.json`. No emulator processes remain. Three verified disposable overlays created by this run were removed after shutdown (about 1.8 GB); an older unrelated overlay was preserved. No phone, router, firewall, SDK installation or publication was changed. [ANDROID_EMULATOR_TESTING.md](ANDROID_EMULATOR_TESTING.md) documents commands, setup constraints and evidence limits.
+
+Fresh handoff checks: required `tools/run_tests.sh` **85 tests / 7,807 assertions / 21 suites pass** (`.bin/phase5-handoff-tests.log`); required `tools/net_smoke.sh` **128 checks pass** (`.bin/phase5-handoff-net.log`, `.bin/phase4-validation/20261105-193532/`). The final standalone Windows EXE passes **39 checks each** headless and rendered, from fresh folders containing only the EXE. Actual rendered mixer peak is **0.1253**, with all four voices sustained at full gain and music, without clipping in the sample. `.bin/phase5-handoff-portable-*.log` and `phase5-portable-*.json` hold the evidence.
+
+Final local candidates were rebuilt and APK signatures verified after the QA additions: `export/TootTubes-phase5-debug.apk`, `export/TootTubes-0.7.0-rc1-release.apk`, `export/TootTubes-0.7.0-rc1.exe`. All remain **0.7.0-rc1 / code 11**; the phone APKs remain ARMv7 + ARM64 and the emulator fixture stays in ignored `.bin/`. Final sizes/hashes are in `export/phase5-builds.json`. Signing material remains outside Git. Windows rendering is accepted locally; Android rendering/ARM execution remain pending a working compatible runtime or physical phones.
+
+### Gate 5 implementation checkpoint
+
+- [x] Audio/settings/title/icon/notices and local campaign/input/save/LAN checks.
+- [x] Required GUT/net smoke, four QA-runner safeguard tests and standalone Windows checks.
+- [x] Local signed Android candidates, embedded Windows candidate and reproducible test guides.
+- [x] Preserve existing AVD data/configuration, unrelated work and private signing material.
+- [ ] Android rendering acceptance: current emulator stack fails; physical ARM builds are not execution-validated here.
+- [ ] Two phone classes: install/upgrade, touch/Back/Home/vibration, sustained four-rider FPS/frame pacing and heat.
+- [ ] Physical airplane-mode campaign/save, two-phone/four-phone Wi-Fi finish/rematch/interruption and human review.
+- [x] Commit the implementation checkpoint as `Phase 5: cooperative polish and release`; full Phase 5 acceptance remains open and nothing is published.
+
+The commit excludes the preexisting `project.godot` physics-tick edit and unrelated reference video/pack documents. The earlier uncommitted-checkpoint note above is historical. This handoff does not start another phase or close the outstanding hardware/human gates.

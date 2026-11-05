@@ -6,6 +6,6 @@ try {
     if ($gameBinary -ne 'godot' -and -not (Test-Path -LiteralPath $gameBinary)) { & "$PSScriptRoot/setup_godot.ps1" }
     & $gameBinary --headless --path . --editor --import
     if ($LASTEXITCODE -ne 0) { throw 'Godot import failed.' }
-    & $gameBinary --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gexit
+    & $gameBinary --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests -ginclude_subdirs -gpost_run_script=res://tools/finish_tests.gd -gexit
     if ($LASTEXITCODE -ne 0) { throw 'GUT tests failed.' }
 } finally { Pop-Location }

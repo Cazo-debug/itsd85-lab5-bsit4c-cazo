@@ -16,6 +16,7 @@ var pause_button: Button
 var reset_button: Button
 var panels: RunPanels
 var panel_key: String = ""
+var fps_label: Label
 
 func make_label(text: String, font_size: int = 28) -> Label:
 	var label: Label = Label.new()
@@ -31,6 +32,7 @@ func make_button(text: String, callback: Callable, parent: Node) -> Button:
 	button.custom_minimum_size = Vector2(120, 120)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(callback)
+	button.pressed.connect(Audio.play_sfx.bind("ui"))
 	parent.add_child(button)
 	return button
 
@@ -69,6 +71,8 @@ func _ready() -> void:
 		seat.clip_text = true
 		grid.add_child(seat)
 		seats.append(seat)
+	fps_label = make_label("", 28)
+	box.add_child(fps_label)
 	banner = make_label("SKY GARDEN", 46)
 	banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	banner.offset_left = -320
@@ -93,6 +97,8 @@ func invalidate_panels() -> void:
 
 # This is the stable view contract: UI reads a detached snapshot, never a body/save.
 func present(view: Dictionary) -> void:
+	fps_label.visible = view.get("show_fps", false)
+	fps_label.text = "%d FPS" % view.get("fps", 0)
 	timer_label.text = "%s / %s" % [view.section, "Practice" if view.practice else "%d s" % ceili(view.time_left)]
 	timer_label.modulate = Color("ff8b94") if not view.practice and view.time_left < 10 else Color.WHITE
 	progress.value = view.progress * 100
