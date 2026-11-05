@@ -42,9 +42,16 @@ func _ready() -> void:
 
 func looping(source: AudioStreamWAV) -> AudioStreamWAV:
 	var stream: AudioStreamWAV = source.duplicate()
+	var frame_bytes: int = (1 if stream.format == AudioStreamWAV.FORMAT_8_BITS else 2) * (2 if stream.stereo else 1)
+	var pcm: PackedByteArray = stream.data
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
-	stream.loop_end = stream.data.size() / 2
+	stream.loop_end = pcm.size() / frame_bytes
+	# Godot 4.7's WAV mixer can decode the exclusive loop endpoint. Retain
+	# the full original period and provide its first frame as a valid guard.
+	# Without this, Android can fault on the first eight-second music wrap.
+	pcm.append_array(pcm.slice(0, frame_bytes))
+	stream.data = pcm
 	return stream
 
 func apply_settings() -> void:

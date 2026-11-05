@@ -1,24 +1,35 @@
 # Phase 5: local acceptance and remaining device checks
 
-2026-11-05. Laptop-first validation of the current audio/settings polish. This is not full release acceptance. Physical phones, wireless LAN, two phone performance classes and human playtesting remain pending. No publication was performed.
+2026-11-05. Laptop checks plus an authorized TECNO CLA5 session. This is not full release acceptance. One ARM debug phone renders and completes real-time scripted courses; native release/active-held lifecycle, steady 60 FPS, wireless LAN, two performance classes and human playtesting remain pending. No publication was performed.
 
 ## What is tested here
 
 | Area | Current local evidence | Limit |
 |---|---|---|
-| Game rules, physics and storage | 85 GUT tests, 7,807 assertions, 21 suites | Automated cases, not human feel |
+| Game rules, physics, audio and storage | 86 GUT tests, 7,818 assertions, 21 suites, including two full music wraps | Automated cases, not human feel |
 | Campaign | 102 menu/normal-input checks; all five courses completed with no recoveries | Scripted steering with the real gas/physics rules |
 | Save/relaunch | 12 checks in a separate process | Disposable campaign save, not an Android upgrade |
 | Controls | 36 checks, 6,691 touch events plus mouse/key checks, 56 holds; Sky Garden completed in 110.32 s | Synthetic Godot input, not an Android touchscreen |
 | LAN | 128 checks in separate two/four-peer processes | Real ENet over loopback, not Wi-Fi or four humans |
 | Settings/title/audio | 39 checks each in standalone headless and rendered Windows runs | Mixer PCM is checked; listening quality needs a person |
-| Packaging | Android debug/release exports, signatures and resource inspection; embedded Windows EXE | Android execution/install/Back/vibration still needs a compatible runtime |
+| Packaging | Android debug/release signatures/resources; embedded Windows EXE; debug APK upgraded code 7 to 11 on the phone with the original save intact | Release APK phone execution and fresh-device installation remain open |
 | Rendering | Portrait captures inspected; four-rider high/low full-course profiling below | Laptop GPU counters do not establish phone FPS or heat |
 | Android emulator continuation | 55 native-control/lifecycle/offline/save checks in a failed-render x86-64 fixture | Flat captures/shader errors; later hardware-backed starts timed out. Overall emulator acceptance remains failed |
+| Physical ARM phone | TECNO CLA5 / Android 15: 129 explicitly scoped checks for rendering, menus, unheld Home/Back, isolated save/relaunch and two real-time four-seat Sky Garden runs | Full native pointer instrumentation times out; final subset skips it explicitly. No airplane-mode, haptic-feel or multi-phone acceptance |
+| Phone performance | High/low mean 51.63/52.22 FPS, P95 24.759/24.461 ms; both finish in 110.9 s with zero recoveries | One debug phone, short charging-device runs; steady 60 FPS and a second class remain open |
+| QA tools | 14 device-free safeguard tests | Target/foreground/coordinates/reports/log retention; not gameplay on a second phone |
 
 The LAN cases include owned-seat spoof rejection, explicit reliable release, lost-refresh expiry, gas and 3D motion, ordered checkpoints, identical shared results, pause/rematch, vacancy, unreachable host and abrupt host-process death. Offline save files remain byte-identical and prior offline result/mode are restored. The explicit-release fixture waits for the host to observe a real held packet before asking the guest to release; it does not assume identical process frame timing.
 
 The later [Android emulator continuation](ANDROID_EMULATOR_TESTING.md) adds actual Android MotionEvent injection and Back/Home/airplane-mode checks, plus strict image/runtime failure detection. Its behavior evidence does not close the Android rendering gate. The separate x86-64 QA export does not replace the ARM phone APKs.
+
+The later authorized [physical-phone session](PHASE5_PHONE_TESTING.md) supplies
+independent ARM debug rendering and real-time course evidence. It found a native
+music-loop PCM overread, repaired with a guard frame while preserving the original
+loop period and samples. Full pointer runs remain failed due to instrumentation
+completion timeouts. Their held-input samples show real force, gas drain and a
+0.75-radian rider orbit change; they do not establish release/drag-out/held-Home
+acceptance. The successful subset reports `native_pointer_tests_passed: false`.
 
 Low quality reduces decorative clouds and particle counts. It retains all four riders, route geometry, hazards, collision, mass, gas and cooperative physics. Reduced motion softens camera yaw; there is no impact shake. Preferences persist without changing the version-2 save format.
 
@@ -82,9 +93,12 @@ Private release signing material stays outside the repository in the current use
 - [x] Original sustained four-seat audio, event effects/music, saved sound/quality/motion/vibration/FPS settings, four-rider title/icon and bundled notices.
 - [x] Automated rules/campaign/save/input/LAN checks and standalone Windows UI/audio checks.
 - [x] Local Android/Windows candidates and APK signature/resource inspection.
-- [ ] Full Android emulator rendering acceptance: current SDK/backend combination fails; preserve its partial behavior evidence separately.
+- [x] ARM debug rendering/execution on the TECNO CLA5, with the PCM loop crash repaired; emulator failure remains a separate diagnostic result.
+- [x] One-phone menu/Settings/Back, Home/resume without held input, two real-time four-seat course completions, isolated save/relaunch and original pre-upgrade save preservation.
+- [ ] Native independent two-finger release, HOLD drag-out and active-held Home cleanup: instrumentation completion currently times out.
+- [ ] Steady 60 FPS optimization: the measured debug average is approximately 52 FPS on both qualities.
 - [ ] Two physical phone classes: four riders firing amid moving hazards; FPS/frame pacing, sustained heat, audio and quality comparison.
-- [ ] Android install/upgrade, portrait/touch targets, independent two-finger release, Back/Home/resume, saved preferences and vibration.
+- [ ] Fresh-device/release-APK execution, full touchscreen/gesture ergonomics and vibration feel; debug upgrade/reinstall and basic Back/Home have device evidence above.
 - [ ] Physical airplane-mode campaign completion/retry/relaunch; actual two-phone and four-phone Wi-Fi finish/rematch/disconnect.
 - [ ] Human review of steering, camera, water/rider visuals, sound balance and obstacle difficulty.
 - [x] Phase 5 implementation checkpoint committed as `9513789`; full acceptance stays open.

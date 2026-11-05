@@ -2,7 +2,7 @@
 
 This checks Android input, lifecycle, settings and offline gameplay on the laptop. It does not replace ARM-phone installation, wireless multiplayer, physical touch/haptics, heat or human playtesting. Use the final JSON result, captures and runtime log together.
 
-**Current result, 2026-11-05: partial behavior evidence; rendering acceptance failed.** The software-rendered x86-64 fixture passed 55 native-control/lifecycle/offline/save checks, but its captures were flat blue and its log contained shader errors. Host GPU mode reached GLES 3.1 without those shader errors but did not reach the first Title snapshot within 120 seconds. ANGLE fell back to the faulty SwiftShader renderer on this installed SDK. The runner now rejects blank captures and runtime errors. No passing Android rendering or ARM-phone execution claim is made.
+**Emulator result, 2026-11-05: partial behavior evidence; emulator rendering acceptance failed.** The software-rendered x86-64 fixture passed 55 native-control/lifecycle/offline/save checks, but its captures were flat blue and its log contained shader errors. Host GPU mode reached GLES 3.1 without those shader errors but did not reach the first Title snapshot within 120 seconds. ANGLE fell back to the faulty SwiftShader renderer on this installed SDK. The runner rejects blank captures and runtime errors. The later authorized [physical-phone session](PHASE5_PHONE_TESTING.md) independently verifies ARM debug execution/rendering on a TECNO CLA5; it does not turn this failed emulator result into a pass.
 
 ## Run
 

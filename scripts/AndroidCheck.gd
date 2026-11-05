@@ -12,6 +12,12 @@ var focus_in: int = 0
 var back_requests: int = 0
 var normal_hash: String = ""
 var solve: bool = false
+var frame_times: Array[float] = []
+var previous_frame_usec: int = 0
+var four_firing_frames: int = 0
+var max_draw_calls: int = 0
+var max_primitives: int = 0
+var frame_summary: Dictionary = {}
 
 static func requested() -> bool:
 	return "--android-check" in OS.get_cmdline_user_args() or (OS.has_feature("android") and OS.has_feature("debug") and FileAccess.file_exists(FLAG))
@@ -43,7 +49,7 @@ func _ready() -> void:
 		GameState.save_progress(SAVE)
 	solve = "--android-solve-check" in OS.get_cmdline_user_args() or options.get("solve") == true
 	if solve:
-		Engine.time_scale = 3.0
+		Engine.time_scale = 1.0 if options.get("realtime") == true else 3.0
 	print("ANDROID_CHECK_READY ", JSON.stringify({"solve": solve, "args": OS.get_cmdline_user_args()}))
 
 func rect(value: Rect2) -> Array[float]:
@@ -74,7 +80,10 @@ func snapshot() -> Dictionary:
 		"focus_out": focus_out, "focus_in": focus_in, "back_requests": back_requests, "net_phase": Net.phase,
 		"audio_targets": Audio.targets.duplicate(), "music_playing": Audio.music.playing,
 		"normal_save_unchanged": normal_hash == (FileAccess.get_sha256(GameState.SAVE_PATH) if FileAccess.file_exists(GameState.SAVE_PATH) else "absent"),
-		"solve": solve, "time_scale": Engine.time_scale}
+		"solve": solve, "time_scale": Engine.time_scale,
+		"performance": {"fps": Engine.get_frames_per_second(), "frames": frame_times.size(),
+			"four_firing_frames": four_firing_frames, "max_draw_calls": max_draw_calls,
+			"max_primitives": max_primitives, "summary": frame_summary}}
 	if scene is SkyLevel:
 		var level: SkyLevel = scene
 		result["level"] = {"instance": level.get_instance_id(), "number": level.level_number, "state": SkyLevel.State.keys()[level.state],
@@ -89,6 +98,20 @@ func snapshot() -> Dictionary:
 
 func _process(delta: float) -> void:
 	var scene: Node = get_tree().current_scene
+	var now: int = Time.get_ticks_usec()
+	if scene is SkyLevel and scene.state == SkyLevel.State.RACING:
+		if previous_frame_usec > 0 and frame_times.size() < 24000:
+			frame_times.append(float(now - previous_frame_usec) / 1000.0)
+		if scene.player.firing.count(true) == 4:
+			four_firing_frames += 1
+		max_draw_calls = maxi(max_draw_calls, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
+		max_primitives = maxi(max_primitives, int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)))
+	elif scene is SkyLevel and scene.state == SkyLevel.State.FINISHED and frame_summary.is_empty() and not frame_times.is_empty():
+		var sorted: Array[float] = frame_times.duplicate()
+		sorted.sort()
+		frame_summary = {"median_ms": sorted[sorted.size() / 2], "p95_ms": sorted[int(sorted.size() * 0.95)],
+			"mean_fps": 1000.0 * float(sorted.size()) / maxf(0.001, sorted.reduce(func(total: float, value: float) -> float: return total + value, 0.0))}
+	previous_frame_usec = now
 	if solve and scene is SkyLevel:
 		# Separate scripted solvability mode: same sustained input/gas/physics,
 		# never mixed with the native-input acceptance run.

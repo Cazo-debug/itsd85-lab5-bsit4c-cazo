@@ -967,3 +967,111 @@ performance classes, wireless co-op and human playtests remain open.
 - [ ] Accepted Android rendering and ARM execution; this emulator diagnostic does not close either gate.
 - [ ] Two physical phone classes, touch/Back/Home/haptics/heat, airplane-mode campaign/save, two/four-phone Wi-Fi and human playtests.
 - [ ] Publication decision; full Phase 5 acceptance remains open.
+
+## Phase 5: authorized wireless physical-phone session
+
+The user connected a phone wirelessly and explicitly authorized checking it on
+their behalf. The selected device is a **TECNO CLA5, Android 15, ARM64, Mali-G57
+MC2, 1080 x 2436 at density 480**. The previously installed prototype was
+`0.4.1-water-riders` / code 7. Its original APK and 924-byte normal save were
+backed up locally before upgrading to the current `0.7.0-rc1` / code 11 debug APK.
+No normal game data was cleared, no unrelated app was closed, and no Wi-Fi,
+router, firewall, SDK or display setting was changed.
+
+### Native audio crash found and repaired
+
+The first device runs reached Title and rendered the four-rider preview, then
+crashed in `AudioTrack` with native SIGSEGV. The music's PCM frame count was
+176,400; the fault address was exactly its sample base plus 176,400 x 2 bytes.
+This strongly identified a read immediately beyond the eight-second mono PCM
+buffer, consistent with the upstream [Godot WAV loop-boundary issue](https://github.com/godotengine/godot/issues/119778).
+
+`Audio.looping()` now keeps the original full loop period and sample bytes,
+appending the first PCM frame as an allocated guard for the mixer endpoint.
+Sound, music, pitch, four-seat voices and attack/release behavior remain enabled.
+The previous test expectation that the loop endpoint equaled the allocated frame
+count encoded the unsafe boundary. It is replaced by stronger checks for the
+unchanged original period/samples, an in-bounds endpoint and the exact guard
+frame. A new 17-second offline mix verifies the cursor after two full eight-second
+wraps, continued playback, finite samples and audible signal. GUT now passes
+**86 tests / 7,818 assertions / 21 suites**: `.bin/phase5-phone-audio-fixed-tests.log`.
+
+### Phone test tools and exact limits
+
+Added `tools/run_phone_checks.py` and seven device-free phone safeguards, alongside
+the seven emulator safeguards. All **14 QA-runner tests pass**. The phone runner
+requires an explicit target, reconnects only the specified paired TCP endpoint,
+protects foreground ownership, scales taps and both pointers to the actual
+display, isolates progression/settings in the debug QA save, and retains logs for
+remembered game PIDs even after native process exit/log rotation. It does not
+clear unrelated phone logs. `AndroidCheck.gd` has opt-in real-time driver support
+and actual phone process-frame/draw-call counters; ordinary startup does not
+create this probe. The existing emulator-only physical-device refusal is retained.
+
+The earlier full phone runs are **failed**, not release acceptance. Their native
+hold samples show distinct AIM/HOLD IDs 100/1, 0.4167 seconds of integrated seat
+force, gas at 95.94% and a 0.75-radian rider orbit change. However, instrumentation
+completion times out after the hold. Queued injection did not resolve it and the
+Java helper experiment was reverted; its original source was rebuilt. Full native
+release, HOLD drag-out and active-held Home cleanup remain open. One rapid
+forced-relaunch attempt stalled with a SurfaceView/EGL warning and no QA telemetry;
+a verified-marker fresh start and subsequent runs reached Title. Recheck that
+observation during fresh-device/release acceptance rather than hiding it.
+
+A repeated Wi-Fi APK transfer also timed out, so `--use-installed` verifies the
+installed APK SHA-256 against the patched local candidate before skipping game
+installation/reinstallation. `--without-pointer-helper` explicitly selects a
+subset and reports native pointer acceptance as false. These modes do not change
+the assertions or results of the failed full native runs.
+
+### Actual device result
+
+The final subset passes **129 checks** with no app script errors or native fatal
+signals: `.bin/phase5-phone/run-07-subset/results.json`. It reports `passed: true`,
+`native_pointer_tests_passed: false`, `game_installation_tested_this_run: false`.
+Earlier runs separately establish the version-7-to-11 debug upgrade and
+same-version reinstall while preserving data. The successful subset covers
+visibly rendered Title/settings/course/results, real Android menu taps and Back,
+Home/resume with no active hold, isolated preferences/progression after process
+relaunch, and both real-time scripted four-seat Sky Garden runs.
+
+| Quality | Mean process FPS | Median/P95 frame | Draws/primitives max | Four-firing frames | Finish/recoveries | Battery temperature |
+|---|---:|---|---|---:|---|---|
+| High | 51.63 | 19.014 / 24.759 ms | 81 / 52,834 | 3,766 | 110.9 s / 0 | 37.7 to 38.1 C |
+| Low | 52.22 | 18.877 / 24.461 ms | 80 / 42,914 | 3,792 | 110.9 s / 0 | 38.1 to 38.0 C |
+
+The four-seat driver runs at `Engine.time_scale == 1`, uses ordinary sustained
+input/gas/physics and both ordered checkpoints, and does not teleport or refill
+gas. Wi-Fi remains enabled for remote control; `Net` stays idle. This is one debug
+phone and two short charging-device runs, not airplane-mode, human ergonomics,
+compositor GPU timing, long heat stability or two performance classes. Average
+cadence is approximately 52 FPS; steady 60 FPS remains an optimization target.
+Phone captures were visually inspected and stay in ignored local evidence; some
+contain the owner's floating chat overlays and are not committed as artwork.
+
+Final device verification in `.bin/phase5-phone/final-device-state.json` confirms
+the original pre-upgrade save is byte-identical, original physical size/density
+are unchanged, the temporary helper/new QA files are removed, and the patched
+normal debug game is open. The original reference video, reference-pack docs and
+preexisting `project.godot` edit remain untouched.
+
+All three candidates were rebuilt and signature/resource checked after the
+audio fix: debug APK, signed release APK and embedded Windows EXE. The phone's
+installed debug APK matches the final local candidate hash. The release APK has
+not been execution-tested on this phone. Required final LAN smoke passes **128
+checks** (`.bin/phase5-phone-audio-net.log`, `.bin/phase4-validation/20261105-225225/`).
+The final standalone Windows EXE passes **39 checks each** headless/rendered, with
+non-silent mixed PCM peaks 0.1039/0.1170; see `.bin/phase5-phone-portable-*.log`.
+
+### Gate 5 after the phone session
+
+- [x] Fix the actual phone music-loop crash without disabling sound or changing the original loop period.
+- [x] Required GUT 86/7,818, LAN 128, QA-runner 14 and standalone Windows 39 checks per mode.
+- [x] ARM debug rendering, menus, unheld Home/Back, isolated save/relaunch and two real-time four-rider course profiles on one phone.
+- [x] Preserve the original phone save/display/network state; remove temporary test files/helper; retain backups and failed evidence.
+- [ ] Full native release/drag-out/active-held lifecycle, haptic/listening/steering/camera feel and touchscreen ergonomics.
+- [ ] Steady 60 FPS, second phone class, longer thermal profiling and fresh-device/release startup stability.
+- [ ] Physical airplane-mode campaign and two/four-phone Wi-Fi finish/rematch/disconnect/human playtests.
+- [ ] Release-APK execution and publication decision; **Phase 5 remains open**. Nothing was published.
+
+See [PHASE5_PHONE_TESTING.md](PHASE5_PHONE_TESTING.md) for reproduction and scope.
