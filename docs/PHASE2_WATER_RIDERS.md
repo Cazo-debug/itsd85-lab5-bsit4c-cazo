@@ -1,6 +1,6 @@
 # Phase 2 feedback: moving riders and responsive water
 
-Updated 2026-11-02. Latest APK: **0.4.1-water-riders / code 7**.
+Updated 2026-11-05. Latest APK: **0.4.2-gate2 / code 8**, `export/TootTubes-phase2-gate2-debug.apk`. The Gate 2 follow-up fixes camera framing after checkpoint recovery; see [the QA report](PHASE2_GATE2_QA.md). The water/rider evidence below records the original code 7 revision.
 
 ## What changed
 
@@ -21,7 +21,7 @@ This is responsive stylized water with bounded surface physics. The fine normal 
 
 Press **F5 -> Play -> Start Sky Garden**. Desktop: WASD aims/moves the selected rider and Space holds thrust. Touch: AIM moves the rider and HOLD supplies thrust. Independent seat bindings remain IJKL/U, TFGH/R and arrows/Enter.
 
-Install `export/TootTubes-phase2-water-riders-debug.apk`, not the earlier sky-garden build. Same Android package; code 7 is newer than code 6, so a compatible signed upgrade can preserve saved profiles/progress. APK signature and packaged resources were verified; installation on a real phone is still pending.
+Install `export/TootTubes-phase2-gate2-debug.apk`. It keeps the same Android package, and code 8 supports a compatible signed upgrade from earlier builds while retaining saved profiles/progress. APK signature and packaged resources were verified; installation on a real phone is still pending.
 
 Compare `docs/screenshots/phase2_v3_s_bend.png` with `phase2_feel_course_s_bend.png`. Focused captures are `phase2_feel_outward`, `orbit`, `thrust`, `wake` and `released`. The updated full-course captures use `phase2_feel_course_*`, and new fall/contact captures use `phase2_feel_hole_fall`, `hole_recovered`, `edge_fall` and `mallet_contact`.
 
@@ -63,6 +63,6 @@ Use a fresh recording directory; stale frames from an earlier attempt must not b
 - [ ] Confirm outward facing, aim-driven movement and spacing feel right on the phone.
 - [ ] Check red tint appears during actual firing and clears after release, pause, depletion and recovery.
 - [ ] Check water/wake readability, bends, slopes, impacts, camera and hole recovery in a human-played completion.
-- [ ] Install code 7 and test two-finger touch, Back, save upgrade, sustained frame pacing and heat.
+- [ ] Install code 8 and test two-finger touch, Back, save upgrade, sustained frame pacing and heat.
 
 Gate 2 remains open for these human/device checks. This revision does not start Phase 3.

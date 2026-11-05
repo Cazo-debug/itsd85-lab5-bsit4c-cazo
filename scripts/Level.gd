@@ -55,6 +55,7 @@ func _ready() -> void:
 	add_child(brain)
 	player.fell.connect(hud.controls.clear)
 	player.recovered.connect(hud.controls.clear)
+	player.recovered.connect(camera.snap)
 	if practice:
 		hud.reset_button.text = "Next area"
 

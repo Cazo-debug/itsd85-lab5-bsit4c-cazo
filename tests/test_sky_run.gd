@@ -83,6 +83,20 @@ func test_ordered_finish_cannot_skip_checkpoints_and_practice_does_not_save() ->
 	level.end_run(true)
 	assert_false(FileAccess.file_exists(PATH), "Practice never advances the campaign")
 
+func test_checkpoint_recovery_keeps_the_crew_in_the_camera_view() -> void:
+	level.begin_run()
+	level.camera.overview = false
+	level.camera.snap()
+	level.player.checkpoint_s = level.course.checkpoints[1] + 3
+	level.player.checkpoint = level.course.path.safe_transform(level.player.checkpoint_s)
+	assert_gt(level.player.position.distance_to(level.player.checkpoint.origin), 50.0, "Exercise a distant checkpoint recovery")
+	level.recover()
+	assert_lt(level.camera.position.distance_to(level.player.position), 30.0, "Camera returns with the ring instead of travelling across the course")
+	for rider: RiderModel in level.player.visual.riders:
+		var head: Vector3 = rider.global_position + Vector3.UP * 0.8
+		assert_false(level.camera.is_position_behind(head), "Recovered rider is in front of the camera")
+		assert_true(get_viewport().get_visible_rect().has_point(level.camera.unproject_position(head)), "Recovered rider is visible immediately")
+
 func test_live_mallet_contact_tips_the_physical_ring() -> void:
 	level.begin_run()
 	level.hud.controls.enabled = false

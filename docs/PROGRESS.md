@@ -631,3 +631,60 @@ remain unverified. Nothing in Phase 3 has started. User edits to project.godot
 and untracked reference media/pack documents remain outside the commit.
 
 Guide: [PHASE2_WATER_RIDERS.md](PHASE2_WATER_RIDERS.md).
+
+---
+
+# Gate 2 verification and recovery-camera fix - 2026-11-05
+
+User requested finishing Gate 2, then confirmed **no phone is available; finish all other checks**. Completed the available automated/rendered checks and the pending QA tooling. Human feel/completion and physical-phone gates remain open. Phase 3 has not started.
+
+## Fix and tools
+
+- Rendered recovery review exposed a real defect: after a distant checkpoint reset, the camera continued smoothing from the fall location and could leave the crew outside the view. Connected the existing `SwimRing.recovered` signal to `RouteCamera.snap` in `Level`. Recovery now moves the camera with the checkpoint teleport; normal follow remains damped. The shared signal also covers manual recovery and Practice area changes.
+- Added a regression for immediate rider visibility after a checkpoint more than 50 m away. Added safe-view checks to both hole and edge recovery fixtures. No tests or assertions were removed or weakened.
+- Finished `verify_gate2_inputs.gd`: actual menu mouse events, keyboard and two-finger event lifecycle, one Local plus three production Assistants, real countdown, repeated holds/releases, pause/focus cleanup, ordered finish and Back. Added configurable capture prefixes, a no-capture timing mode and full-run camera assertions. Disposable saves remain isolated from the player's save.
+- Finished the Android test-only helper and builder. Fixed Windows PowerShell compression assembly loading and keytool stderr handling; delete the disposable signing key afterward. The helper checks game focus during gestures and only cancels pointers it started. These QA files are excluded from game exports.
+- Updated README and the current testing guides to the new APK. Preserved the old APKs, recordings, screenshots, existing `project.godot` edit and reference media/pack files.
+
+## Validation
+
+Required `tools/run_tests.sh`, Godot 4.7.2 standard / GUT 9.6.1:
+
+```text
+Scripts              13
+Tests                56
+Passing Tests        56
+Asserts            2302
+All tests passed!
+```
+
+Focused camera/run suite: **5 tests / 30 assertions pass**. Corrected rendered recovery fixture: **two safe whole-crew recoveries**, one real mallet contact, **41.98-degree** peak physical tilt; rider safe-view checks pass. The before/after `gate2_final_hole_recovered.png` and `gate2_corrected_hole_recovered.png` show the defect and correction explicitly. Fixtures deliberately place the hull and are separate from legal-input completion evidence.
+
+Final post-fix rendered event-driver run with screenshots disabled: **36 checks pass**, **110.32 s** completion, **56** hold presses, **6,691** touch events, **one contact**, **zero recoveries**, both ordered checkpoints, no extra focus-loss resumes. All four rider head points stayed inside the defined safe area for **100% of sampled frames**. This does not establish occlusion-free visibility under every possible impact or human camera comfort. Earlier capture run: 37 checks including one extra desktop focus resume; its images use `gate2_final_*`.
+
+Final desktop performance sample on Intel UHD Graphics, Compatibility, 720 x 1280: **16.661 ms median / 18.572 ms p95**, sampled maxima **80 draw calls / 56,402 visible primitives**. The emulator, other game checks, screenshot writes and recording/encoding were stopped for this run. These are desktop results, not phone frame pacing or heat evidence. Earlier focused four-rider and preview measurements remain in their dated sections.
+
+New phone artifact: `export/TootTubes-phase2-gate2-debug.apk`, **0.4.2-gate2 / code 8**, **57,855,109 bytes**. Export succeeded; apksigner verifies v2/v3. Package/minimum API remain `com.itsd85.toottubes.prototype` / 24, ARMv7 + ARM64. Archive checks confirm Level01, WaterStyle and RiderOrbit and exclude tests/tools/docs/addons/reference materials and credentials. SHA-256: `FAD1C70BB8361E0899DA1428421F9377F5A3E369671F347ED1006E41EFF999AC`.
+
+## Android and remaining acceptance
+
+The isolated read-only Android 11 emulator now exposes GLES 3.1. The delivered ARM APK installs and initializes the engine, but stalls before a usable game screen under translation; ARM runtime acceptance remains unsuccessful here. A separate ignored x86_64 export of the same code 8 source rendered Title, creator/save, menu, Crew Setup and Practice. The helper accepted **39 OS touchscreen events** across three two-pointer sequences in Practice, with inactive HOLD feedback after release. Android navigation returned to the menu. This supplemental native-emulator smoke is not an ARM phone run, a gas/force assertion, or a human completion. Short ADB menu taps were inconsistent; longer stationary swipes were used. Rejected helper attempts reported zero events; they do not verify its separate foreground-guard path.
+
+The production export preset is restored to ARMv7 + ARM64. The QA helper was uninstalled and the owned emulator processes stopped. Existing emulator profile/data were preserved. APKs, temporary exports, logs, SDK/editor files and signing material remain outside Git.
+
+## Gate 2 checklist
+
+- [x] New/migrated tests; exactly one physical ring.
+- [x] Main Play opens saved-crew Sky Garden; Practice is reachable; legacy solo is isolated.
+- [x] Four independent occupants; short/held/simultaneous thrust coverage.
+- [x] Curves, S-bends, hairpin, narrow route, climb/descent/dip geometry.
+- [x] Seven connected sections, six hazards, two bumpers/two holes and two safe checkpoints.
+- [x] Physical push/tilt, whole-crew falls/recovery; corrected camera follows checkpoint reset.
+- [ ] Human camera/control review and reliable physical mobile release; automated/rendered coverage passes.
+- [ ] Human-played completion; desktop frame times and four-rider counters are recorded above.
+- [ ] Real-phone install/upgrade, sustained touch, portrait, frame pacing and heat; deferred because no phone is available.
+- [x] Before/after captures, existing uninterrupted scripted recording, updated progress/testing guides; commit `Phase 2: four-rider ring, curved terrain and cooperative obstacles`.
+
+All available automated work is complete. Gate 2 is not relabeled as fully accepted: the plan explicitly requires human play and physical-phone checks. Stop here; no campaign or networking implementation.
+
+Report and reproduction commands: [PHASE2_GATE2_QA.md](PHASE2_GATE2_QA.md).

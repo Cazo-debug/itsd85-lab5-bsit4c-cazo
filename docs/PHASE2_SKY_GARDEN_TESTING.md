@@ -1,6 +1,6 @@
 # Revised Phase 2: Sky Garden testing
 
-Updated 2026-11-02. Latest build is 0.4.1-water-riders / code 7; see [the water/rider feedback guide](PHASE2_WATER_RIDERS.md). This is the current shared-ring game; the earlier PHASE2_TESTING.md describes a retired solo prototype.
+Updated 2026-11-05. Latest build is 0.4.2-gate2 / code 8; see [the Gate 2 QA report](PHASE2_GATE2_QA.md) and [the water/rider feedback guide](PHASE2_WATER_RIDERS.md). This is the current shared-ring game; the earlier PHASE2_TESTING.md describes a retired solo prototype.
 
 ## Open the right version
 
@@ -59,12 +59,12 @@ Use an empty recording directory for a new run; stale tail frames from an earlie
 
 ## Install and check on Android
 
-Build: **0.4.1-water-riders / code 7**, `export/TootTubes-phase2-water-riders-debug.apk`, same package `com.itsd85.toottubes.prototype`. Install this APK over the previous compatible debug-signed build to preserve saves. Do not uninstall to work around a signature mismatch if you need those saves.
+Build: **0.4.2-gate2 / code 8**, `export/TootTubes-phase2-gate2-debug.apk`, same package `com.itsd85.toottubes.prototype`. Install this APK over the previous compatible debug-signed build to preserve saves. Do not uninstall to work around a signature mismatch if you need those saves.
 
 With USB debugging enabled and the phone authorized:
 
 ```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r .\export\TootTubes-phase2-water-riders-debug.apk
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" -s DEVICE_SERIAL install -r .\export\TootTubes-phase2-gate2-debug.apk
 ```
 
 Alternatively copy the APK to the phone and open it. Android may request permission to install from that source.

@@ -1,6 +1,6 @@
 # Toot Tubes
 
-**Updated 2026-11-02: revised Phase 2 is implemented.** Play opens the curved, elevated Sky Garden with one physical ring and 1-4 cooperating riders. The latest Phase 2 revision adds outward-facing riders that move around the rim when aimed, red thrust feedback and shared wave-driven water. Human play and real-phone acceptance remain pending. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
+**Updated 2026-11-05: revised Phase 2 is implemented.** Play opens the curved, elevated Sky Garden with one physical ring and 1-4 cooperating riders. The water/rider revision adds outward-facing riders that move around the rim when aimed, red thrust feedback and shared wave-driven water. Gate 2 verification also fixes camera framing after checkpoint recovery. Human play and real-phone acceptance remain pending. [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
 
 Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. The route, riders and scenery use original procedural artwork. Campaign expansion, LAN and finished audio remain later phases.
 
@@ -31,7 +31,7 @@ Existing version-2 profiles/progress are preserved. Original save migration back
 
 ## Android and verification
 
-Updated build: `export/TootTubes-phase2-water-riders-debug.apk` (0.4.1-water-riders, code 7). Install this build instead of the Phase 1 preview APK. The export folder is intentionally ignored by Git.
+Updated build: `export/TootTubes-phase2-gate2-debug.apk` (0.4.2-gate2, code 8). Install this build instead of the Phase 1 preview APK. The export folder is intentionally ignored by Git. [Gate 2 QA and reproduction commands](docs/PHASE2_GATE2_QA.md).
 
 ```powershell
 .\tools\run_tests.ps1

@@ -34,6 +34,12 @@ func capture(tag: String) -> void:
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://docs/screenshots/%s_%s.png" % [capture_prefix, tag])
 
+func check_crew_visible() -> void:
+	for rider: RiderModel in level.player.visual.riders:
+		var head: Vector3 = rider.global_position + Vector3.UP * 0.8
+		check(not level.camera.is_position_behind(head), "Recovered crew must be in front of the camera")
+		check(Rect2(16, 360, 688, 600).has_point(level.camera.unproject_position(head)), "Recovered crew must return inside the safe play view")
+
 func place(distance: float, lateral: float) -> void:
 	level.player.release_all_inputs()
 	level.player.falling = false
@@ -82,6 +88,7 @@ func verify() -> void:
 	check(not true in level.player.held, "Recovery must clear every held request")
 	check(level.player.visual.riders.size() == 4, "All riders recover on the same hull")
 	check(level.race_time > clock, "Run clock must continue during fall/recovery")
+	check_crew_visible()
 	await capture("hole_recovered")
 	var edge_s: float = level.course.path.length * 0.28
 	var edge: Dictionary = level.course.path.sample(edge_s)
@@ -92,6 +99,7 @@ func verify() -> void:
 	await capture("edge_fall")
 	await frames(55)
 	check(level.player.recoveries == 2 and not level.player.falling, "Edge recovery must complete safely")
+	check_crew_visible()
 	var mallet: Node3D
 	for hazard: Node3D in level.course.hazards:
 		if hazard.kind == "mallet":
