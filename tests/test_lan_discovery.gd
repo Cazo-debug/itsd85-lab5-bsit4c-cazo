@@ -54,3 +54,23 @@ func test_two_instances_find_each_other_over_loopback() -> void:
 		return
 	assert_eq(found[0].name, "TestHost")
 	assert_true(str(found[0].ip).is_valid_ip_address())
+
+func _find_line_edit(node: Node) -> LineEdit:
+	if node is LineEdit:
+		return node
+	for child: Node in node.get_children():
+		var found: LineEdit = _find_line_edit(child)
+		if found != null:
+			return found
+	return null
+
+func test_ip_field_keyboard_can_type_three_dots() -> void:
+	# Android's decimal keyboard accepts only one '.', so an IP address cannot be typed with it.
+	var scene: Node = load("res://scenes/ui/ModeSelect.tscn").instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var field: LineEdit = _find_line_edit(scene)
+	assert_not_null(field, "Mode select has the IP field")
+	if field != null:
+		assert_ne(field.virtual_keyboard_type, LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL)
+		assert_ne(field.virtual_keyboard_type, LineEdit.KEYBOARD_TYPE_NUMBER)

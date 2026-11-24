@@ -44,7 +44,8 @@ func build_modes() -> void:
 	ip_field.placeholder_text = "Host IP, e.g. 192.168.1.10"
 	ip_field.custom_minimum_size.y = 120
 	ip_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ip_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL
+	# Not NUMBER_DECIMAL: Android's decimal keyboard accepts only one dot, and an IP needs three.
+	ip_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	join_row.add_child(ip_field)
 	connection_button = button("Join", join_crew, join_row)
 	connection_button.size_flags_horizontal = Control.SIZE_SHRINK_END
