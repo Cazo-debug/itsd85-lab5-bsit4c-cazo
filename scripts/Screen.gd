@@ -93,6 +93,11 @@ func back_button() -> Button:
 func go(destination: String) -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/%s.tscn" % destination)
 
+## Course select remembers where it was opened from, so Back returns there.
+func open_courses(from: String) -> void:
+	GameState.course_return = from
+	go("LevelSelect")
+
 func back() -> void:
 	match screen:
 		"Title": get_tree().quit()
@@ -154,7 +159,7 @@ func build_main_menu() -> void:
 	model.configure(GameState.local_profiles, GameState.crew_slots, GameState.leader_profile)
 	button("Play", go.bind("ModeSelect"), content, "primary")
 	var middle: HBoxContainer = row()
-	button("Courses", go.bind("LevelSelect"), middle)
+	button("Courses", open_courses.bind("MainMenu"), middle)
 	button("Avatar", open_avatar, middle)
 	var minor: HBoxContainer = row()
 	button("Settings", go.bind("Settings"), minor, "ghost")
@@ -315,7 +320,7 @@ func build_crew() -> void:
 	button("Edit rider", edit_crew_profile, actions)
 	button("Make leader", make_leader, actions)
 	button("Control this seat", control_selected_seat, options, "ghost")
-	button("Choose course", go.bind("LevelSelect"), options, "ghost")
+	button("Choose course", open_courses.bind("CrewSetup"), options, "ghost")
 	options.add_child(label("Assistants are computer riders that push with you.
 The leader picks the ring's look.", 0, "caption"))
 	# Main action pinned in the thumb zone: one big Start, Practice beside it.

@@ -18,6 +18,7 @@ var crew_slots: Array[Dictionary] = CrewData.default_slots()
 var leader_profile: int = 0
 var selected_profile: int = 0
 var creator_return: String = "MainMenu"
+var course_return: String = "CrewSetup"
 var active_local_seat: int = 0
 # Keep legacy readers and in-place avatar edits attached to profile zero.
 var avatar: Dictionary:

@@ -55,4 +55,4 @@ func refresh_sound() -> void:
 	sound_button.text = "Sound: %s" % ("On" if GameState.settings.sound else "Off")
 
 func back() -> void:
-	go("CrewSetup" if screen == "LevelSelect" else "MainMenu")
+	go(GameState.course_return if screen == "LevelSelect" else "MainMenu")
