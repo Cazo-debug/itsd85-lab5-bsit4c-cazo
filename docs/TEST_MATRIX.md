@@ -10,6 +10,7 @@ Build tested: `TootTubes-v1.0` (version 1.0, code 12) · Date: ________
 | Progress saved after force-close (clear L2, force-close, reopen: L3 open) | | |
 | Offline mode in airplane mode | | |
 | Online match between the two phones (host on one, join on the other) | | |
+| Nearby game appears on the second phone without typing an IP (try Wi-Fi and phone hotspot) | | |
 | Wi-Fi off → Join shows an error message, no crash | | |
 | Frame rate smooth (no visible stutter); Settings → Show FPS: ___ FPS | | |
 | Battery/heat acceptable after 10 minutes | | |

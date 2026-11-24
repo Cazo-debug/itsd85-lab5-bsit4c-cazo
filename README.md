@@ -24,8 +24,9 @@ work together to dodge mallets, crushers and whirlpools before the timer runs ou
 ## Offline and online modes
 - **Offline (works in airplane mode):** Play → **Play offline**. Add up to three computer assistant riders in Crew Setup, then start a course from Level Select.
 - **Online (same Wi-Fi, 2–4 phones):**
-  1. Phone 1: Play → **Host a game**. The screen shows its IP (for example `192.168.1.23`).
-  2. Phone 2: Play → type that IP → **Join**.
+  1. Phone 1: Play → **Host a game**.
+  2. Phone 2: Play → under **Games nearby**, tap **Join <name>'s game**. No IP address is needed.
+  3. If nothing shows up, type the host's IP (shown on the host's lobby screen) and tap **Join**.
   3. Guests tap Ready, then the host taps **Start together**. Everyone controls their own rider on the same ring.
 
   The host runs the ring and decides the result. If the host can't be reached within 5 seconds, or anyone disconnects, a message is shown and the game returns to Mode Select. Online results do not change offline unlocks.

@@ -42,7 +42,7 @@ Every level has two safe checkpoints. A **Practice** mode replays Level 1's sect
 
 ## 8. Online mode
 - **Co-op, real time**, 2 phones (up to 4) on the same Wi-Fi (lab Option A).
-- One phone taps **Host a game** and shows its IP; the others type it and tap **Join**. Godot ENet, port 7777.
+- One phone taps **Host a game**. It announces itself on the Wi-Fi (a small UDP broadcast on port 7778), so the other phones list it under **Games nearby** and join with one tap. Typing the host's IP is the fallback. Godot ENet, port 7777.
 - **Data sent:**
   - Guests send only their own seat's aim direction and hold state.
   - The host simulates the ring and sends its position, rotation and speed, each rider's gas and the run state (timer, checkpoint, finish).
@@ -68,4 +68,4 @@ Title → Avatar creator (first launch) → Main menu (Play, Courses, Avatar, Se
 | Physics too hard to control for new players | Practice mode, contextual hints, generous time limits |
 | Online lag between phones | Host-authoritative ring with interpolation on guests; inputs expire so thrust can't get stuck |
 | Low-end phone frame rate | Low quality setting (fewer particles and decorations, same physics) |
-| Players can't find each other online | IP shown on the host screen, 5-second join timeout with a "same Wi-Fi" message |
+| Players can't find each other online | nearby games listed automatically, IP fallback, 5-second join timeout with a "same Wi-Fi" message |
