@@ -39,9 +39,11 @@ var input_enabled: bool = true
 var accepted_inputs: int = 0
 var last_host_at: int = 0
 var last_heartbeat_at: int = 0
+var discovery: LanDiscovery = LanDiscovery.new()
 
 func _ready() -> void:
 	process_physics_priority = 100
+	add_child(discovery)
 	multiplayer.connected_to_server.connect(_connected)
 	multiplayer.connection_failed.connect(_connection_failed)
 	multiplayer.server_disconnected.connect(_server_lost)
@@ -60,6 +62,7 @@ func host(avatar: Dictionary, port: int = PORT) -> Error:
 	owners[0] = 1
 	profiles[0] = local_avatar
 	ready_peers[1] = true
+	discovery.start_announcing(str(local_avatar.get("name", "Player")))
 	lobby_changed.emit()
 	return OK
 
@@ -96,6 +99,7 @@ func begin_session(is_host: bool, avatar: Dictionary) -> void:
 	last_heartbeat_at = 0
 
 func close_session(message: String = "") -> void:
+	discovery.stop_announcing()
 	if is_instance_valid(level):
 		level.player.release_all_inputs()
 		level.player.simulate = false
@@ -168,6 +172,7 @@ func start_run() -> void:
 
 func launch_round() -> void:
 	# Called only by the host after all current lobby members are ready.
+	discovery.stop_announcing()
 	round_id += 1
 	_launch.rpc(round_id, course_number)
 	prepare_round(round_id, course_number)
@@ -294,6 +299,8 @@ func return_to_lobby() -> void:
 	run_ready = false
 	ready_peers.clear()
 	ready_peers[1] = true
+	if hosting:
+		discovery.start_announcing(str(local_avatar.get("name", "Player")))
 	if navigating:
 		get_tree().change_scene_to_file.call_deferred("res://scenes/ui/Lobby.tscn")
 	lobby_changed.emit()

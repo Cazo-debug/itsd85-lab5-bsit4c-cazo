@@ -8,6 +8,7 @@ var ready_button: Button
 var start_button: Button
 var course_button: Button
 var connection_button: Button
+var nearby_box: VBoxContainer
 
 func build_menu() -> void:
 	content.add_child(label("Crew lobby" if screen == "Lobby" else "How do you want to play?", 0, "heading"))
@@ -28,6 +29,16 @@ func build_modes() -> void:
 	spacer(content, 24)
 	content.add_child(section_title("ONLINE - phones on the same Wi-Fi"))
 	button("Host a game", host_crew)
+	spacer(content, 12)
+	content.add_child(label("Games nearby (tap one to join)", 0, "caption"))
+	nearby_box = VBoxContainer.new()
+	nearby_box.add_theme_constant_override("separation", 12)
+	content.add_child(nearby_box)
+	Net.discovery.hosts_changed.connect(refresh_nearby)
+	Net.discovery.start_listening()
+	refresh_nearby()
+	spacer(content, 12)
+	content.add_child(label("Nothing showing? Type the host's IP instead:", 0, "caption"))
 	var join_row: HBoxContainer = row()
 	ip_field = LineEdit.new()
 	ip_field.placeholder_text = "Host IP, e.g. 192.168.1.10"
@@ -42,7 +53,6 @@ func build_modes() -> void:
 	content.remove_child(message)
 	content.add_child(message)
 	message.add_theme_color_override("font_color", Color("b23a33"))
-	content.add_child(label("The host sees their IP after tapping Host a game.", 0, "caption"))
 	spacer()
 	back_button()
 	set_process(true)
@@ -71,6 +81,29 @@ func section_title(text: String) -> Label:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	return title
 
+func refresh_nearby() -> void:
+	if not is_instance_valid(nearby_box):
+		return
+	for child: Node in nearby_box.get_children():
+		nearby_box.remove_child(child)
+		child.queue_free()
+	var found: Array[Dictionary] = Net.discovery.sorted_hosts()
+	if found.is_empty():
+		nearby_box.add_child(label("Searching... ask a friend to tap Host a game.", 0, "caption"))
+		return
+	for host_info: Dictionary in found:
+		button("Join %s's game" % host_info.name, join_address.bind(host_info.ip), nearby_box, "primary")
+
+func join_address(address: String) -> void:
+	if Net.join(address, GameState.avatar) != OK:
+		message.text = Net.status_message
+
+func _exit_tree() -> void:
+	if Net.discovery.hosts_changed.is_connected(refresh_nearby):
+		Net.discovery.hosts_changed.disconnect(refresh_nearby)
+	if screen == "ModeSelect":
+		Net.discovery.stop_listening()
+
 func host_crew() -> void:
 	if Net.host(GameState.avatar) == OK:
 		go("Lobby")
@@ -78,8 +111,7 @@ func host_crew() -> void:
 		message.text = Net.status_message
 
 func join_crew() -> void:
-	if Net.join(ip_field.text, GameState.avatar) != OK:
-		message.text = Net.status_message
+	join_address(ip_field.text)
 
 func refresh_lobby() -> void:
 	if not Net.active:
