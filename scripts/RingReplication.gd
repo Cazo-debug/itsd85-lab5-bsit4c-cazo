@@ -20,6 +20,7 @@ static func capture(level: Node3D, round_id: int, tick: int) -> Dictionary:
 		"angles": ring.orbit.angles.duplicate(), "motion": ring.orbit_motion.duplicate(),
 		"s": ring.route_s, "falling": ring.falling, "recoveries": ring.recoveries,
 		"contacts": ring.contact_count, "pickups_collected": level.pickups_collected,
+		"star_scores": level.star_scores.duplicate(), "stars_taken": level.course.stars.map(func(item: Dictionary) -> int: return item.taken_by),
 		"checkpoint": level.checkpoint_index, "state": int(level.state), "state_time": level.state_time,
 		"race_time": level.race_time, "time_left": level.time_left, "result": level.result.duplicate(true),
 		"pickups": level.course.pickups.map(func(item: Dictionary) -> float: return item.ready_at)}
@@ -61,6 +62,10 @@ func apply(level: Node3D, now: float) -> void:
 	ring.recoveries = latest.recoveries
 	ring.contact_count = latest.contacts
 	level.pickups_collected = latest.pickups_collected
+	level.star_scores.assign(latest.star_scores)
+	for index: int in range(mini(level.course.stars.size(), latest.stars_taken.size())):
+		level.course.stars[index].taken_by = latest.stars_taken[index]
+	level.course.update_stars(latest.race_time)
 	level.checkpoint_index = latest.checkpoint
 	level.state = latest.state
 	level.state_time = latest.state_time

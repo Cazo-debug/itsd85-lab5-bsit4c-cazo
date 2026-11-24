@@ -11,6 +11,8 @@ Build tested: `TootTubes-v1.0` debug build (version 1.0, code 12) · Date: 2026-
 | Offline mode in airplane mode | Pass – airplane mode on, no network interface; offline race ran with working controls | Not tested |
 | Online match between the two phones (host on one, join on the other) | Pass – hosted; both phones loaded the same course and timer (Wi-Fi and hotspot). Finish and in-race movement not yet checked | Pass – joined as guest (Wi-Fi and hotspot) |
 | Nearby game appears on the second phone without typing an IP (try Wi-Fi and phone hotspot) | Pass – host announced itself | Pass – listed within about 6 s on home Wi-Fi and on a hotspot; one tap joined |
+| Star Scramble offline: Versus against an assistant rider (stars on the water, per-rider counts) | Pass – banner showed the rules, gold stars rendered, P1 ★3 / P2 ★2 (5 of 12) after one run, 56 FPS | Not tested |
+| Star Scramble online: two phones, host picks Versus or Teams | Not yet tried on the phones (passed in the real-process LAN smoke test) | Not yet tried on the phones |
 | Wi-Fi off → Join shows an error message, no crash | Pass – airplane mode, typed 192.168.1.10; red message "Could not reach the host...", no crash | Not tested |
 | Frame rate smooth (no visible stutter); Settings → Show FPS: ___ FPS | Pass – 65 FPS idle, 64 FPS moving (High quality) | Pass – 60 FPS at idle (High quality) |
 | Battery/heat acceptable after 10 minutes | Inconclusive – battery 36.8 → 36.7 °C, but the run left Practice before 10 min | Inconclusive – 39.1 → 39.5 °C at 5 min, then USB dropped (battery about 10%) |

@@ -19,6 +19,6 @@ Use codes T1, T2, … only. No names, faces or phone numbers in shared files
    - Phone 2 for the online match.
    - Both phones charged and on the same Wi-Fi.
 2. **Brief in one sentence only:** "Please play as you normally would and say out loud what you are thinking." Do not explain the controls or the goal.
-3. **Play** Levels 1–3 offline, then one online match with you on Phone 2.
+3. **Play** Levels 1–3 offline in Co-op, then one online match with you on Phone 2. Run the online match in **Versus** (so there is a winner), and write the mode on the observation sheet.
 4. **Observe silently** and fill in the observation sheet. Help only if they are stuck for more than 2 minutes, and write down that you helped.
 5. **Form:** the tester fills in the feedback form right away.

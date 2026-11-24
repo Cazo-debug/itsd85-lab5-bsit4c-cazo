@@ -9,6 +9,8 @@ var best_stars: Dictionary = {}
 var best_times: Dictionary = {}
 var current_level: int = 1
 var mode: String = "offline"
+## Star Scramble mode for offline runs: coop, versus or teams (see MatchRules). Not saved.
+var match_mode: String = "coop"
 var last_result: Dictionary = {}
 var save_version: int = SAVE_VERSION
 var local_profiles: Array[Dictionary] = CrewData.default_profiles()

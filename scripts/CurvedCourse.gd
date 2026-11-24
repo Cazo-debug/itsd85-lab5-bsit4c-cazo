@@ -4,6 +4,8 @@ extends Node3D
 var path: CoursePath
 var hazards: Array[CourseHazard] = []
 var pickups: Array[Dictionary] = []
+## Collectible stars (Star Scramble). taken_by is the seat that won it, or -1.
+var stars: Array[Dictionary] = []
 var checkpoints: Array[float] = []
 var finish_s: float
 ## First water chunk; every chunk shares its material (water.material_override).
@@ -146,7 +148,33 @@ func build(definition: Dictionary) -> void:
 		sphere.rings = 4
 		var instance: MeshInstance3D = mesh(sphere, Color("ffcf50"), Transform3D(Basis.IDENTITY, at))
 		pickups.append({"s": fraction * path.length, "node": instance, "ready_at": 0.0})
+	build_stars()
 	build_decor()
+
+func build_stars() -> void:
+	var star_material: StandardMaterial3D = toon_flat(Color("ffd23f"))
+	star_material.emission_enabled = true
+	star_material.emission = Color("ffb300")
+	star_material.emission_energy_multiplier = 0.55
+	for plan: Dictionary in StarPlan.build(path):
+		var frame: Dictionary = path.sample(plan.s)
+		var home: Vector3 = frame.position + frame.lateral * plan.lateral + frame.normal * 1.0
+		var node: MeshInstance3D = MeshInstance3D.new()
+		node.mesh = StarMesh.build()
+		node.material_override = star_material
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		node.position = home
+		add_child(node)
+		stars.append({"s": plan.s, "lateral": plan.lateral, "node": node, "home": home, "taken_by": -1})
+
+## Spin and bob the stars that are still on the course (presentation only).
+func update_stars(time: float) -> void:
+	for index: int in range(stars.size()):
+		var star: Dictionary = stars[index]
+		var node: MeshInstance3D = star.node
+		node.visible = star.taken_by < 0
+		node.rotation.y = time * 2.2 + index
+		node.position.y = star.home.y + sin(time * 2.6 + index) * 0.12
 
 func update_water(time: float, ring: SwimRing) -> void:
 	path.water_time = time

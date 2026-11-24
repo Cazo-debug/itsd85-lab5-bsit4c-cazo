@@ -11,6 +11,7 @@ var crew_buttons: Array[Button] = []
 var crew_status: Label
 var crew_profile_label: Label
 var crew_control_button: Button
+var mode_button: Button
 var save_status: Label
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 const OUTFIT_NAMES: Array[String] = ["Red", "Yellow", "Green", "Teal", "Blue", "Purple", "Pink", "White"]
@@ -301,6 +302,8 @@ func build_crew() -> void:
 	scroll.add_child(options)
 	crew_status = label("", 0, "caption")
 	options.add_child(crew_status)
+	mode_button = button("", cycle_match_mode, options)
+	refresh_mode_button()
 	var profile_row: HBoxContainer = row(options)
 	button("◀", cycle_crew_profile.bind(-1), profile_row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	crew_profile_label = label("")
@@ -321,6 +324,19 @@ The leader picks the ring's look.", 0, "caption"))
 	button("Start Sky Garden", launch_sky.bind(false), play_row, "primary").size_flags_stretch_ratio = 1.7
 	back_button()
 	refresh_crew()
+
+func cycle_match_mode() -> void:
+	GameState.match_mode = MatchRules.next_mode(GameState.match_mode)
+	refresh_mode_button()
+
+func refresh_mode_button() -> void:
+	var riders: int = 0
+	for slot: Dictionary in GameState.crew_slots:
+		if slot.control != "empty":
+			riders += 1
+	mode_button.text = "Mode: %s" % MatchRules.label(GameState.match_mode)
+	if crew_status != null and GameState.match_mode != "coop" and riders < 2:
+		crew_status.text = "Add a second rider (or an assistant) to play %s." % MatchRules.label(GameState.match_mode)
 
 func select_seat(index: int) -> void:
 	selected_seat = index
@@ -354,6 +370,8 @@ func refresh_crew() -> void:
 	crew_status.text = "Seat %d selected" % (selected_seat + 1)
 	crew_profile_label.text = "Profile %d\n%s" % [selected_crew_profile() + 1, GameState.local_profiles[selected_crew_profile()].get("name", "Player")]
 	crew_control_button.text = "Seat: %s  ▸" % {"empty": "Empty", "local": "Local rider", "assist": "Assistant", "peer": "Peer"}[slot.control]
+	if mode_button != null:
+		refresh_mode_button()
 
 func persist_crew() -> void:
 	refresh_crew()

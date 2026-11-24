@@ -8,6 +8,7 @@ var index: int = 0
 var players: int = 2
 var output: String = ".bin/net-smoke"
 var scenario: String = "crew"
+var match_mode: String = "coop"
 var port: int = 7777
 var failures: Array[String] = []
 var checks: int = 0
@@ -47,6 +48,7 @@ func _initialize() -> void:
 		if argument.begins_with("--players="): players = int(argument.trim_prefix("--players="))
 		if argument.begins_with("--output="): output = argument.trim_prefix("--output=")
 		if argument.begins_with("--scenario="): scenario = argument.trim_prefix("--scenario=")
+		if argument.begins_with("--mode="): match_mode = argument.trim_prefix("--mode=")
 		if argument.begins_with("--port="): port = int(argument.trim_prefix("--port="))
 	call_deferred("verify")
 
@@ -118,6 +120,7 @@ func verify() -> void:
 				continue
 			if role == "host" and net.owners.count(0) == 4 - players and net.can_start():
 				check(net.profiles[1].skin == 5 and not net.profiles[1].has("extra"), "Host sanitized remote avatar")
+				net.choose_mode(match_mode)
 				net.start_run()
 				print("Host starts shared run with %d peers" % players)
 			elif role != "host" and net.local_seat() >= 0:
@@ -155,6 +158,9 @@ func verify() -> void:
 				first_finish_at = Time.get_ticks_msec()
 				check(first_result.get("won", false), "Crew completes course using sustained network inputs")
 				check(not first_result.get("saved", true) and not first_result.has("place"), "Cooperative online result has no place or progress write")
+				check(first_result.get("mode", "") == match_mode, "Every phone shows the mode the host chose (%s)" % match_mode)
+				check(first_result.get("stars_collected", -1) == int(first_result.get("scores", [0]).reduce(func(a: int, b: int) -> int: return a + b, 0)), "Result star total matches the per-seat scores")
+				check(not str(first_result.get("headline", "")).is_empty() and first_result.get("lines", []).size() >= 1, "Result carries the host headline and standings")
 				check(level.checkpoint_index == 2, "Both ordered checkpoints reached")
 				check(movement_seen and shared_height_seen and gas_used, "3D motion and per-seat gas replicated")
 				if role == "host":

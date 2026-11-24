@@ -7,6 +7,7 @@ var slot_labels: Array[Label] = []
 var ready_button: Button
 var start_button: Button
 var course_button: Button
+var lobby_mode_button: Button
 var connection_button: Button
 var nearby_box: VBoxContainer
 
@@ -59,7 +60,7 @@ func build_modes() -> void:
 	set_process(true)
 
 func build_lobby() -> void:
-	build_preview(220)
+	build_preview(140)
 	var slots: GridContainer = GridContainer.new()
 	slots.columns = 2
 	content.add_child(slots)
@@ -71,6 +72,7 @@ func build_lobby() -> void:
 		slots.add_child(item)
 		slot_labels.append(item)
 	course_button = button("", cycle_course)
+	lobby_mode_button = button("", cycle_mode)
 	ready_button = button("", toggle_ready)
 	start_button = button("Start together", Net.start_run, content, "primary")
 	button("Back / leave crew", back, content, "ghost")
@@ -125,6 +127,9 @@ func refresh_lobby() -> void:
 	course_button.text = "Course %d: %s%s" % [Net.course_number, LevelDefs.LEVELS[Net.course_number - 1].name, " / change" if Net.hosting else ""]
 	course_button.disabled = not Net.hosting
 	course_button.add_theme_font_size_override("font_size", 28)
+	lobby_mode_button.text = "Mode: %s%s" % [MatchRules.label(Net.match_mode), " / change" if Net.hosting else ""]
+	lobby_mode_button.disabled = not Net.hosting
+	lobby_mode_button.add_theme_font_size_override("font_size", 28)
 	ready_button.text = "Ready: %s" % ("Yes" if Net.ready_peers.get(Net.multiplayer.get_unique_id(), false) else "No")
 	start_button.visible = Net.hosting
 	start_button.disabled = not Net.can_start()
@@ -134,6 +139,9 @@ func refresh_lobby() -> void:
 			if address.contains(".") and not address.begins_with("127.") and not address.begins_with("169.254."):
 				addresses.append(address)
 	message.text = ("Host IP: " + ", ".join(addresses) + "\n" if Net.hosting else "Host chooses the course and starts.\n") + "2-4 riders / lost guest seat becomes vacant"
+
+func cycle_mode() -> void:
+	Net.choose_mode(MatchRules.next_mode(Net.match_mode))
 
 func toggle_ready() -> void:
 	Net.set_ready(not Net.ready_peers.get(Net.multiplayer.get_unique_id(), false))

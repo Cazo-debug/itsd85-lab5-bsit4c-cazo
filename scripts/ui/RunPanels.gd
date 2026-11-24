@@ -101,6 +101,7 @@ func show_result(result: Dictionary, course: String, next_available: bool) -> vo
 		detail += "  ·  %d recover%s" % [result.recoveries, "y" if result.recoveries == 1 else "ies"]
 	if not result.won:
 		detail = "%s\nThe timer ran out. Try a different route!" % course
+	detail += star_lines(result)
 	if result.get("save_error", OK) != OK:
 		detail += "\nProgress could not be saved. Check storage."
 	var actions: Array[Array] = []
@@ -114,7 +115,25 @@ func show_result(result: Dictionary, course: String, next_available: bool) -> vo
 	if result.get("save_error", OK) != OK:
 		actions.append(["Retry saving", "save", ""])
 	actions.append(["Menu", "menu", ""])
-	show_panel("Crew complete!" if result.won else "Time's up", detail, actions, result.stars if result.won else -1)
+	show_panel(result_title(result), detail, actions, result.stars if result.won else -1)
+
+## Headline: the winner in Versus and Teams, otherwise the usual crew result.
+func result_title(result: Dictionary) -> String:
+	if result.get("mode", "coop") != "coop":
+		return str(result.get("headline", "Results"))
+	return "Crew complete!" if result.get("won", false) else "Time's up"
+
+## Standings (or the crew star tally) as extra lines for the result panel.
+func star_lines(result: Dictionary) -> String:
+	if not result.has("stars_total"):
+		return ""
+	var text: String = "\nStars: %d of %d" % [result.get("stars_collected", 0), result.get("stars_total", 0)]
+	if result.get("mode", "coop") != "coop":
+		for line: String in result.get("lines", []):
+			text += "\n" + line
+		if not result.get("won", false):
+			text += "\n(Time ran out before the finish.)"
+	return text
 
 func show_online_pause(host: bool) -> void:
 	var actions: Array[Array] = []
@@ -131,4 +150,5 @@ func show_online_result(result: Dictionary, course: String, host: bool) -> void:
 		actions.append(["Return crew to lobby", "lobby", ""])
 	actions.append(["Leave crew", "menu", "danger"])
 	var won: bool = result.get("won", false)
-	show_panel("Crew complete!" if won else "Time's up", "%s  ·  %.1f s\nOne shared result for the whole crew.%s" % [course, result.get("time", 0.0), "" if host else "\nWaiting for the host."], actions, result.get("stars", 0) if won else -1)
+	var note: String = "One shared result for the whole crew." if result.get("mode", "coop") == "coop" else "The host decided the winner."
+	show_panel(result_title(result), "%s  ·  %.1f s%s\n%s%s" % [course, result.get("time", 0.0), star_lines(result), note, "" if host else "\nWaiting for the host."], actions, result.get("stars", 0) if won else -1)

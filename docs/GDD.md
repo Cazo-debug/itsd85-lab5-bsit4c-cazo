@@ -14,11 +14,17 @@ Every few seconds the player aims and farts to push the shared ring:
 - **HOLD button (right thumb):** hold to fart. Your rider pushes the ring away from its seat while a cloud bursts out behind it. Release to coast.
 - **Gas meter:** each rider has their own gas. It drains while farting and refills while resting; beans on the course refill it.
 - Riders' pushes combine on the one ring, so timing and direction matter. Walls and hazards bump the ring; holes and edges drop it.
+- **Star Scramble:** 12 gold stars float on every course (the same places every time). When a rider's seat passes within reach of a star, the nearest rider takes it. Riders therefore steer the ring together *and* rotate around the rim to claim stars. Per-rider star counts are shown in the HUD.
 
 ## 4. Goal, win condition, lose condition
 - **Goal:** bring the whole crew to the finish of the course before the timer runs out.
 - **Win:** the ring crosses the finish line in time. Stars: more than 50% of the time left = 3 stars, more than 25% = 2, otherwise 1.
 - **Lose:** the timer reaches 0 → result screen with Retry.
+- **Star modes (chosen before the run; one shared ring in all of them):**
+  - **Co-op:** the crew shares one star total, shown on the result screen.
+  - **Versus:** every rider for themselves. Most stars wins; equal stars is a tie. Needs two riders (offline: a human plus an assistant).
+  - **Teams 2v2:** seats 1 + 3 against seats 2 + 4. The team with the most stars wins.
+  - The level rating (3/2/1 stars by time left) and the unlocking rule below are unchanged, so Versus and Teams count for progress like Co-op. If a mode needs more riders than are seated, the game falls back to Co-op.
 - Falling off the course is not a loss: the crew restarts at the last checkpoint while the clock keeps running.
 
 ## 5. Level plan
@@ -39,14 +45,16 @@ Every level has two safe checkpoints. A **Practice** mode replays Level 1's sect
 ## 7. Offline mode
 - **Solo campaign + versus-the-clock**, playable in airplane mode with no network code running.
 - The player controls one rider and can add up to three **computer assistant riders** in Crew Setup. Assistants use the same gas and physics rules.
+- **Versus the computer:** pick Mode: Versus (or Teams 2v2) in Crew Setup and race the assistants for the most stars. Assistants steer with the same rules; they do not hunt stars, so they are a light opponent.
 
 ## 8. Online mode
-- **Co-op, real time**, 2 phones (up to 4) on the same Wi-Fi (lab Option A).
+- **Co-op, Versus or Teams 2v2, real time**, 2 phones (up to 4) on the same Wi-Fi (lab Option A). The host picks the mode in the lobby.
 - One phone taps **Host a game**. It announces itself on the Wi-Fi (a small UDP broadcast on port 7778), so the other phones list it under **Games nearby** and join with one tap. Typing the host's IP is the fallback. Godot ENet, port 7777.
 - **Data sent:**
   - Guests send only their own seat's aim direction and hold state.
   - The host simulates the ring and sends its position, rotation and speed, each rider's gas and the run state (timer, checkpoint, finish).
-- **The host decides the result:** it checks the finish and the timer and sends one shared result to every phone. Guests' messages are validated (own seat only, rate and strength limits).
+  - The host awards every star (nearest rider in reach, once) and sends the per-seat star counts and which stars are taken. Guests never award stars.
+- **The host decides the result and the winner:** it checks the finish and the timer, adds up the stars (per rider, per team or for the crew) and sends one shared result with the headline (for example "Team A wins!") to every phone. Guests' messages are validated (own seat only, rate and strength limits).
 - If a guest leaves, that seat goes empty. If the host leaves or cannot be reached, guests see a clear message and return to Mode Select.
 - Online results **do not** change offline unlocks.
 

@@ -19,6 +19,9 @@ var checkpoint_index: int = 0
 var previous_s: float = 3.0
 var won: bool = false
 var pickups_collected: int = 0
+## Star Scramble: stars each seat has won, and the mode in force for this run.
+var star_scores: Array[int] = [0, 0, 0, 0]
+var match_mode: String = "coop"
 var practice_index: int = 0
 var result: Dictionary = {}
 var settings_save_error: Error = OK
@@ -61,6 +64,9 @@ func _ready() -> void:
 	hud.pause_requested.connect(toggle_pause)
 	hud.reset_requested.connect(recover)
 	hud.action_requested.connect(handle_action)
+	match_mode = MatchRules.effective_mode(Net.match_mode if online else GameState.match_mode, occupied_seats())
+	if practice:
+		match_mode = "coop"
 	brain = CrewBrain.new()
 	brain.ring = player
 	add_child(brain)
@@ -99,6 +105,7 @@ func _physics_process(delta: float) -> void:
 		State.RACING:
 			race_time += delta
 			course.update_water(race_time, player)
+			course.update_stars(race_time)
 			time_left = maxf(0, time_limit - race_time)
 			for hazard: CourseHazard in course.hazards:
 				hazard.update_time(race_time)
@@ -111,6 +118,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				check_progress()
 				check_pickups()
+				check_stars()
 	hud.present(run_snapshot())
 
 func run_snapshot() -> Dictionary:
@@ -121,11 +129,12 @@ func run_snapshot() -> Dictionary:
 			section = item[1]
 	var crew: Array[Dictionary] = []
 	for seat: int in range(4):
-		crew.append({"occupied": player.seat_control[seat] != "empty", "gas": player.gas[seat],
+		crew.append({"occupied": player.seat_control[seat] != "empty", "gas": player.gas[seat], "stars": star_scores[seat],
 			"firing": player.firing[seat], "name": player.avatars[player.slots[seat].profile].get("name", "Player") if player.seat_control[seat] != "empty" else "Empty"})
 	return {"state": State.keys()[state], "course": definition.name, "goal": definition.get("goal_text", ""), "section": section,
 		"time_left": time_left, "race_time": race_time, "countdown": maxi(1, 3 - int(state_time)),
-		"progress": player.route_s / course.path.length, "crew": crew, "practice": practice,
+		"progress": player.route_s / course.path.length, "crew": crew, "practice": practice, "mode": match_mode, "stars_total": course.stars.size(),
+		"stars_collected": star_scores.reduce(func(a: int, b: int) -> int: return a + b, 0), "rules": MatchRules.rules_text(match_mode),
 		"falling": player.falling, "sound": GameState.settings.sound, "result": result.duplicate(),
 		"settings_save_error": settings_save_error,
 		"next_available": CampaignFlow.next_level(GameState, result) > 0,
@@ -165,6 +174,33 @@ func check_pickups() -> void:
 			pickup.node.hide()
 			pickups_collected += 1
 
+func occupied_seats() -> Array[bool]:
+	var result_seats: Array[bool] = []
+	for seat: int in range(4):
+		result_seats.append(player.seat_control[seat] != "empty")
+	return result_seats
+
+func seat_names() -> Array[String]:
+	var names: Array[String] = []
+	for seat: int in range(4):
+		names.append(str(player.avatars[player.slots[seat].profile].get("name", "Player")) if player.seat_control[seat] != "empty" else "Empty")
+	return names
+
+## Host only: the nearest rider in reach wins each star, once. Scores and winner are the host's call.
+func check_stars() -> void:
+	var occupied: Array[bool] = occupied_seats()
+	var positions: Array[Vector3] = []
+	for seat: int in range(4):
+		positions.append(player.seat_position(seat))
+	for star: Dictionary in course.stars:
+		if star.taken_by >= 0:
+			continue
+		var seat: int = StarPlan.claimant(positions, occupied, star.home)
+		if seat >= 0:
+			star.taken_by = seat
+			star.node.hide()
+			star_scores[seat] += 1
+
 func end_run(success: bool) -> void:
 	if state != State.RACING:
 		return
@@ -179,6 +215,7 @@ func end_run(success: bool) -> void:
 	hud.controls.clear()
 	brain.enabled = false
 	result = CampaignFlow.finish(GameState, level_number, race_time, time_limit, success, player.recoveries, practice)
+	result.merge(MatchRules.tally(match_mode, star_scores, occupied_seats(), seat_names(), course.stars.size()), true)
 	if online:
 		result.online = true
 		Net.publish(true)

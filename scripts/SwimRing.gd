@@ -75,6 +75,10 @@ var smoothed_acceleration: Vector3 = Vector3.ZERO
 # Visual-only randomness (sound pitch); never used by physics or hazards.
 var visual_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
+## World position of a rider's seat as drawn (used to award stars).
+func seat_position(seat: int) -> Vector3:
+	return global_transform * orbit.visual_offset(seat, SharedRingPreview.SEAT_RADIUS, 0.5)
+
 func setup(course_path: CoursePath, profiles: Array[Dictionary], crew: Array[Dictionary], leader_profile: int) -> void:
 	path = course_path
 	avatars = profiles.duplicate(true)

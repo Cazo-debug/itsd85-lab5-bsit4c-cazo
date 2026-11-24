@@ -18,6 +18,7 @@ var ready_peers: Dictionary = {}
 var loaded: Dictionary = {}
 var pending: Dictionary = {}
 var course_number: int = 1
+var match_mode: String = "coop"
 var round_id: int = 0
 var run_ready: bool = false
 var level: Node3D
@@ -157,6 +158,11 @@ func choose_course(number: int) -> void:
 		course_number = number
 		broadcast_lobby()
 
+func choose_mode(mode: String) -> void:
+	if hosting and phase == "lobby":
+		match_mode = MatchRules.sanitize_mode(mode)
+		broadcast_lobby()
+
 func set_ready(value: bool) -> void:
 	if not active or phase != "lobby":
 		return
@@ -174,7 +180,7 @@ func launch_round() -> void:
 	# Called only by the host after all current lobby members are ready.
 	discovery.stop_announcing()
 	round_id += 1
-	_launch.rpc(round_id, course_number)
+	_launch.rpc(round_id, course_number, match_mode)
 	prepare_round(round_id, course_number)
 
 func prepare_round(number: int, course_id: int) -> void:
@@ -316,7 +322,7 @@ func publish(reliable: bool = false) -> void:
 		_snapshot.rpc(snapshot)
 
 func broadcast_lobby() -> void:
-	_lobby.rpc(owners, profiles, ready_peers, course_number)
+	_lobby.rpc(owners, profiles, ready_peers, course_number, match_mode)
 	lobby_changed.emit()
 
 func _process(delta: float) -> void:
@@ -410,7 +416,7 @@ func _hello(avatar: Variant) -> void:
 	broadcast_lobby()
 
 @rpc("authority", "call_remote", "reliable", 0)
-func _lobby(new_owners: Array, avatars: Array, readiness: Dictionary, number: int) -> void:
+func _lobby(new_owners: Array, avatars: Array, readiness: Dictionary, number: int, mode: String = "coop") -> void:
 	if not active or hosting:
 		return
 	owners.assign(new_owners)
@@ -418,6 +424,7 @@ func _lobby(new_owners: Array, avatars: Array, readiness: Dictionary, number: in
 	ready_peers = readiness.duplicate()
 	last_host_at = Time.get_ticks_msec()
 	course_number = number
+	match_mode = MatchRules.sanitize_mode(mode)
 	if phase == "connecting":
 		phase = "lobby"
 		deadline = 0
@@ -440,8 +447,9 @@ func _ready_request(value: bool) -> void:
 		broadcast_lobby()
 
 @rpc("authority", "call_remote", "reliable", 0)
-func _launch(number: int, course_id: int) -> void:
+func _launch(number: int, course_id: int, mode: String = "coop") -> void:
 	if active and not hosting:
+		match_mode = MatchRules.sanitize_mode(mode)
 		prepare_round(number, course_id)
 
 @rpc("any_peer", "call_remote", "reliable", 0)

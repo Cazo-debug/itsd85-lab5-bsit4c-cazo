@@ -143,7 +143,7 @@ func present(view: Dictionary) -> void:
 	fps_label.text = "%d FPS" % view.get("fps", 0)
 	timer_label.text = "Practice" if view.practice else "%d s" % ceili(view.time_left)
 	timer_label.modulate = Color("ff8b94") if not view.practice and view.time_left < 10 else Color.WHITE
-	section_label.text = view.section
+	section_label.text = "%s  ·  ★ %d/%d" % [view.section, view.get("stars_collected", 0), view.get("stars_total", 0)]
 	progress.value = view.progress * 100
 	hint.text = view.hint if DisplayServer.is_touchscreen_available() else view.hint + "\nWASD + Space on desktop"
 	hint.visible = not in_dialog
@@ -157,14 +157,14 @@ func present(view: Dictionary) -> void:
 	for index: int in range(4):
 		var seat: Dictionary = view.crew[index]
 		seats[index].visible = seat.occupied
-		seats[index].text = "P%d %d%%" % [index + 1, roundi(seat.gas * 100)]
+		seats[index].text = "P%d  ★%d\n%d%%" % [index + 1, seat.get("stars", 0), roundi(seat.gas * 100)]
 		seats[index].modulate = Color("ffcf50") if seat.firing else (Color("ff8b94") if seat.gas < 0.15 else Color.WHITE)
 	# R2: the level goal is shown at the start of every level.
 	var goal: String = "Practice: no time limit" if view.practice else String(view.get("goal", ""))
 	banner.visible = view.state in ["INTRO", "COUNTDOWN"] or view.falling
 	count_label.visible = view.state == "COUNTDOWN" or (view.state == "RACING" and view.race_time < 0.8 and not view.falling)
 	if view.state == "INTRO":
-		banner.text = "WAITING FOR CREW" if view.get("waiting", false) else "%s\n%s" % [view.course.to_upper(), goal]
+		banner.text = "WAITING FOR CREW" if view.get("waiting", false) else "%s\n%s\n%s" % [view.course.to_upper(), goal, view.get("rules", "")]
 	elif view.state == "COUNTDOWN":
 		banner.text = goal
 		count_label.text = str(view.countdown)

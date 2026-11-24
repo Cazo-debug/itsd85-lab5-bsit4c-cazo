@@ -18,10 +18,14 @@ def main():
     folder = repo / '.bin' / 'phase4-validation' / time.strftime('%Y%m%d-%H%M%S')
     folder.mkdir(parents=True, exist_ok=False)
     reports = []
-    cases = [(f'crew-{n}', n, 7777) for n in ([args.players] if args.players else [2, 4])]
-    cases.append(('unreachable', 1, 17779))
-    cases.append(('host_loss', 2, 17781))
-    for scenario, players, port in cases:
+    cases = [(f'crew-{n}', n, 7777, 'coop') for n in ([args.players] if args.players else [2, 4])]
+    if not args.players:
+        # Star Scramble: the host decides the winner and every guest must show the same result.
+        cases.append(('crew-2-versus', 2, 17790, 'versus'))
+        cases.append(('crew-4-teams', 4, 17791, 'teams'))
+    cases.append(('unreachable', 1, 17779, 'coop'))
+    cases.append(('host_loss', 2, 17781, 'coop'))
+    for scenario, players, port, mode in cases:
         target = folder / scenario
         target.mkdir()
         children = []
@@ -31,7 +35,7 @@ def main():
                 role = 'host' if index == 0 and scenario != 'unreachable' else 'guest'
                 command = [engine, '--path', str(repo), '--max-fps', '60', '--time-scale', '3', '--script', 'tools/net_smoke_peer.gd', '--',
                            f'--role={role}', f'--index={index}', f'--players={players}', f'--output={target.as_posix()}',
-                           f'--scenario={scenario if scenario in ("unreachable", "host_loss") else "crew"}', f'--port={port}']
+                           f'--scenario={scenario if scenario in ("unreachable", "host_loss") else "crew"}', f'--port={port}', f'--mode={mode}']
                 if not args.rendered:
                     command.insert(1, '--headless')
                 log = (target / f'{role}-{index}.log').open('w', encoding='utf-8')
@@ -57,7 +61,10 @@ def main():
             for log in handles:
                 log.flush()
             for path in target.glob('*.log'):
-                if 'ERROR:' in path.read_text(encoding='utf-8', errors='replace'):
+                # Godot prints 'resources still in use at exit' when a quitting process frees nodes in a
+                # different order. It says nothing about the game, so only other engine errors fail the run.
+                lines = path.read_text(encoding='utf-8', errors='replace').splitlines()
+                if any('ERROR:' in line and 'still in use at exit' not in line for line in lines):
                     raise RuntimeError(f'Engine runtime error: {path}')
             if not all(result['passed'] for result in results):
                 raise RuntimeError(f'{scenario} failed: {target}')

@@ -17,7 +17,12 @@ work together to dodge mallets, crushers and whirlpools before the timer runs ou
 - **Right button (HOLD):** hold to fart and push the ring; release to coast.
 - Each rider has a **gas meter** that refills while resting; **beans** refill it faster.
 - **Goal:** get the whole crew to the finish before the timer ends (the goal is shown at the start of each level).
-- **Stars:** more than 50% of the time left = 3 stars, more than 25% = 2, otherwise 1. Falling sends the crew back to the last checkpoint while the clock keeps running.
+- **Level rating:** more than 50% of the time left = 3 stars, more than 25% = 2, otherwise 1. Falling sends the crew back to the last checkpoint while the clock keeps running.
+- **Star Scramble:** 12 gold stars float on every course. The nearest rider whose seat passes a star takes it, so you must steer the ring *and* rotate to the right bank. Pick a mode before you start:
+  - **Co-op:** the crew shares one star total.
+  - **Versus:** every rider for themselves; the most stars wins (offline you can race the computer assistants).
+  - **Teams 2v2:** seats 1 + 3 against seats 2 + 4; the team with the most stars wins.
+  The ring is still shared and everyone still needs to reach the finish, so winning takes teamwork *and* rivalry.
 - **Unlocking:** Level 1 is open. Clear a level to unlock the next; locked levels show a lock. Progress is saved on the phone.
 - **Pause:** Resume, Restart, Sound on/off, Quit. Every screen has Back (the Android back gesture also works).
 
@@ -27,9 +32,9 @@ work together to dodge mallets, crushers and whirlpools before the timer runs ou
   1. Phone 1: Play → **Host a game**.
   2. Phone 2: Play → under **Games nearby**, tap **Join <name>'s game**. No IP address is needed.
   3. If nothing shows up, type the host's IP (shown on the host's lobby screen) and tap **Join**.
-  3. Guests tap Ready, then the host taps **Start together**. Everyone controls their own rider on the same ring.
+  4. The host picks the mode (Co-op, Versus or Teams 2v2) and the course. Guests tap Ready, then the host taps **Start together**. Everyone controls their own rider on the same ring.
 
-  The host runs the ring and decides the result. If the host can't be reached within 5 seconds, or anyone disconnects, a message is shown and the game returns to Mode Select. Online results do not change offline unlocks.
+  The host runs the ring, awards every star and decides the winner. If the host can't be reached within 5 seconds, or anyone disconnects, a message is shown and the game returns to Mode Select. Online results do not change offline unlocks.
 
 ## How to build
 - Godot **4.7.2 standard** (not .NET), Compatibility renderer. Open `project.godot` and press **F5**.

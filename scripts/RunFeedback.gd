@@ -7,6 +7,7 @@ var previous_state: int = -1
 var previous_falling: bool = false
 var previous_checkpoint: int = 0
 var previous_pickups: int = 0
+var previous_stars: int = 0
 var previous_contacts: int = 0
 var last_vibration: int = -1000
 var quality: String = ""
@@ -52,6 +53,9 @@ func _process(delta: float) -> void:
 		Audio.play_sfx("checkpoint")
 	if level.pickups_collected > previous_pickups:
 		Audio.play_sfx("bean")
+	var star_total: int = level.star_scores.reduce(func(a: int, b: int) -> int: return a + b, 0)
+	if star_total > previous_stars:
+		Audio.play_sfx("checkpoint", 1.5)
 	if level.player.contact_count > previous_contacts and running:
 		Audio.play_sfx("impact")
 		vibrate(20)
@@ -68,6 +72,7 @@ func _process(delta: float) -> void:
 	previous_falling = level.player.falling
 	previous_checkpoint = level.checkpoint_index
 	previous_pickups = level.pickups_collected
+	previous_stars = star_total
 	previous_contacts = level.player.contact_count
 
 func keep_frame_budget(delta: float) -> void:

@@ -350,7 +350,7 @@ def abstract_text() -> str:
         "Casual cooperative games usually need accounts, servers or large screens, which makes them "
         "hard to play in a classroom or at home. This paper presents Toot Tubes, an Android game "
         "in which up to four cartoon animals share one swim ring and steer it through five "
-        "sky-waterpark courses by pushing it with sustained, per-rider thrust. The game was built "
+        "sky-waterpark courses by pushing it with sustained, per-rider thrust. Twelve collectible stars per course add a score that is shared by the crew (Co-op), individual (Versus) or per team (Teams 2v2). The game was built "
         "with the open-source Godot 4 engine and has an offline campaign with computer helper "
         "riders, a persistent level-unlocking system, and a host-authoritative LAN mode for two to "
         "four phones on the same Wi-Fi network or hotspot, with automatic discovery of nearby games. "
@@ -375,7 +375,7 @@ def build_paper() -> Document:
     fmt_par(author, WD_ALIGN_PARAGRAPH.CENTER, 0, 0)
     for line in ["Team Cazo, Section BSIT-4C", "College of Information Sciences and Computing",
                  "Central Mindanao University, Musuan, Maramag, Bukidnon, Philippines",
-                 ph("author email")]:
+                 "carlosfidelcaatro@gmail.com"]:
         paragraph = doc.add_paragraph()
         add_runs(paragraph, line, 9, italic=True)
         fmt_par(paragraph, WD_ALIGN_PARAGRAPH.CENTER, 0, 0)
@@ -442,7 +442,8 @@ def build_paper() -> Document:
         "compensation techniques try to hide [6], [9]. Godot provides a high-level multiplayer "
         "API on top of the ENet protocol [5].")
     P.p("Toot Tubes differs from these works in three ways. It has one physical ring that all riders "
-        "move together, so there is no versus mode and no opponent. Thrust is sustained and "
+        "move together, so rivalry in Versus and Teams is about who claims the stars on that shared ring, "
+        "not about separate vehicles. Thrust is sustained and "
         "per-rider rather than a single tap. And the whole game, including nearby-game discovery, "
         "runs on a plain local network without any server.")
 
@@ -459,6 +460,12 @@ def build_paper() -> Document:
         "quarter earns two, and anything else earns one. When the timer reaches zero the level is "
         "lost and the result screen offers Retry. Falling off the course is not a loss: the crew "
         "restarts at the last of two checkpoints while the clock keeps running.")
+    P.p("On top of the race, every course holds twelve collectible stars (Star Scramble). The nearest "
+        "rider whose seat passes within reach of a star takes it, so riders must steer the ring together "
+        "and also rotate around the rim to claim stars. Before a run the players choose a mode: in Co-op "
+        "the crew shares one star total, in Versus every rider plays for themselves, and in Teams 2v2 "
+        "seats 1 and 3 play against seats 2 and 4. The ring is shared in every mode, so the whole crew "
+        "still has to reach the finish, and the star total decides the winner.")
     P.sub("B", "Levels, difficulty and unlocking")
     P.caption_table("Level plan")
     P.table(["#", "Level", "What is new or harder", "Time (s)"], LEVEL_ROWS, [0.28, 0.85, 1.77, 0.5], size=7)
@@ -468,7 +475,7 @@ def build_paper() -> Document:
         "Best stars and best times are stored on the phone.")
     P.sub("C", "Offline and online modes")
     P.p("Offline mode needs no network. One player controls a rider and may add up to three computer "
-        "helper riders that follow the same gas and physics rules. Online mode is cooperative and real "
+        "helper riders that follow the same gas and physics rules; in Versus or Teams the player races the helpers for stars. Online mode is cooperative and real "
         "time: two to four phones on the same Wi-Fi network or hotspot join one crew. Online results "
         "do not change offline unlocks. Fig. 1 shows the screens and how players move between them.")
     P.figure(ASSETS / "fig1_screen_flow.png", "Screen flow of Toot Tubes. Every screen has a Back button and handles the Android back gesture.")
@@ -506,8 +513,10 @@ def build_paper() -> Document:
         "simulates the shared ring, validates every guest message, and decides the result. A guest "
         "sends only the aim direction and hold state of its own seat; the host checks the seat, "
         "rate and strength and lets old inputs expire, so a lost message can never leave thrust "
-        "stuck on. The host sends the ring state, each rider's gas and the run state (timer, "
-        "checkpoint, finish) to every guest, and guests interpolate between updates (Fig. 2).")
+        "stuck on. The host also awards each star to the nearest rider in reach and adds up the "
+        "scores, so a guest can never give itself a star. The host sends the ring state, each rider's "
+        "gas, the star scores and the run state (timer, checkpoint, finish, winner) to every guest, and "
+        "guests interpolate between updates (Fig. 2).")
     P.figure(ASSETS / "fig2_architecture.png", "Architecture. The host simulates the ring and decides the result; guests send only their own seat's input.")
     P.p("The usual way to join in a lab setting is to type the host's IP address, which first "
         "testing showed to be too technical for casual players. The host therefore announces "
@@ -677,8 +686,10 @@ def build_paper() -> Document:
          "a clear message and return to Mode Select. If a guest leaves, its seat becomes vacant and the host continues. "
          "Peers that stay silent for 8 seconds are treated as lost, and nothing crashes or freezes."),
         ("Why should the host decide the winner?",
-         "Each phone could report a different result because of latency or tampering. The host simulates the one shared "
-         "ring, validates guest inputs and sends a single result, so every phone shows the same outcome."),
+         "Each phone could report a different result because of latency or tampering, and in Versus or Teams a phone "
+         "could simply claim every star. The host simulates the one shared ring, awards each star to the nearest rider "
+         "in reach, validates guest inputs, adds up the scores and sends one result with the winner, so every phone "
+         "shows the same outcome and a guest cannot change it."),
         ("Which playtest finding surprised the team most?", ph("fill in after the playtest")),
         ("Which statement scored lowest, and what would be done with one more week?", ph("fill in after the playtest")),
         ("Android versus iOS?",
@@ -742,7 +753,7 @@ def build_cover() -> Document:
     center(doc, "GitHub: Cazo-debug", 11, after=18)
     center(doc, "SUBMITTED TO:", 11, bold=True, after=2)
     paragraph = doc.add_paragraph()
-    add_runs(paragraph, "[[Instructor name]]", 11)
+    add_runs(paragraph, "Renante Buntod", 11)
     fmt_par(paragraph, WD_ALIGN_PARAGRAPH.CENTER, 0, 0)
     center(doc, "Course Instructor — ITSD 85", 11, after=24)
     center(doc, "NOVEMBER 2026", 11, bold=True)
