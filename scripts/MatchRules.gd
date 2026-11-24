@@ -50,10 +50,24 @@ static func effective_mode(mode: String, occupied: Array[bool]) -> String:
 		return "versus" if riders >= 2 else "coop"
 	return "coop"
 
+## Riders who share a name get their seat number added ("Player P1", "Player P2") so the
+## result screen never says "Player wins!" when two riders are called Player.
+static func unique_names(names: Array[String], occupied: Array[bool]) -> Array[String]:
+	var result: Array[String] = names.duplicate()
+	for seat: int in range(result.size()):
+		if not occupied[seat]:
+			continue
+		for other: int in range(result.size()):
+			if other != seat and occupied[other] and names[other] == names[seat]:
+				result[seat] = "%s P%d" % [names[seat], seat + 1]
+				break
+	return result
+
 ## Standings for a finished (or timed-out) run.
 ## scores: stars per seat. occupied: which seats have a rider. names: display names per seat.
 static func tally(mode: String, scores: Array[int], occupied: Array[bool], names: Array[String], stars_total: int) -> Dictionary:
 	mode = effective_mode(mode, occupied)
+	names = unique_names(names, occupied)
 	var teams: Array[Dictionary] = []
 	for seat: int in range(4):
 		if not occupied[seat]:

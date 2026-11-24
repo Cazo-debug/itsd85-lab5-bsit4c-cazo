@@ -59,6 +59,15 @@ func test_versus_winner_is_the_rider_with_most_stars() -> void:
 	assert_eq(result.lines[0], "Ben: 7 stars")
 	assert_eq(result.lines.size(), 3, "The empty seat is not listed")
 
+func test_riders_with_the_same_name_are_told_apart() -> void:
+	var same: Array[String] = ["Player", "Player", "Cy", "Di"]
+	var fixed: Array[String] = MatchRules.unique_names(same, seats(true, true, false, false))
+	assert_eq(fixed, ["Player P1", "Player P2", "Cy", "Di"] as Array[String])
+	var result: Dictionary = MatchRules.tally("versus", scores(0, 5, 0, 0), seats(true, true, false, false), same, 12)
+	assert_eq(result.headline, "Player P2 wins!")
+	var alone: Array[String] = MatchRules.unique_names(same, seats(true, false, false, false))
+	assert_eq(alone[0], "Player", "a lone rider keeps the plain name")
+
 func test_ties_are_called_a_tie() -> void:
 	var result: Dictionary = MatchRules.tally("versus", scores(4, 4, 1, 0), seats(true, true, true, false), names(), 12)
 	assert_true(result.tie)
