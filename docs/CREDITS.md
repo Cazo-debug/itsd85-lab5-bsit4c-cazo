@@ -12,7 +12,7 @@ Additional bundled GUT font copyright/license notices are preserved in `docs/lic
 
 ## Sky environment revision (2026-11-01)
 
-Original procedural Godot scenery: striped cliffs, clouds, floating islands, umbrellas, balloons and checker/finish markers. Visual specifications and formulas were supplied by the user in `toot-tubes-codex-pack/`; no commercial game assets, models, screenshots or external web fonts are bundled. The social-media screenshot and reference HTML/images are design references only. Fredoka remains the in-game font under the existing OFL credit.
+Original procedural Godot scenery: striped cliffs, clouds, floating islands, umbrellas, balloons and checker/finish markers. Visual design is the author's own; no commercial game assets, models, screenshots or external web fonts are bundled. The social-media screenshot and reference HTML/images are design references only. Fredoka remains the in-game font under the existing OFL credit.
 
 Hole correction: original procedural open cylinder shafts and foam torus rims, based on the user-supplied environment specification.
 
@@ -27,3 +27,14 @@ Phase 3 (2026-11-05): original Canyon Switchbacks, Cloud Bridges, Spiral Springs
 Phase 4 (2026-11-05): original LAN lobby, mode/result presentation and `docs/screenshots/phase4_mode_select.png`, `phase4_lobby_four.png`, `phase4_shared_result.png`, rendered from the existing original procedural game artwork with OFL Fredoka. ENet support is supplied by Godot under its existing license. No new third-party media, models, textures or audio.
 
 Phase 5 (2026-11-05): original four-rider vector icon at `assets/icons/toot_tubes.svg`; original synthesized mono WAV assets at `assets/audio/`: `thrust_attack`, `thrust_loop`, `thrust_release`, `impact`, `fall`, `pickup`, `ui`, `checkpoint`, `win`, `timeout` and `sky_theme`. All are reproducible with `tools/generate_audio.py`; the repeating melody is an original procedural composition. No recordings, downloaded samples or commercial game media were used. The new title/settings/feedback presentation reuses the original procedural meshes and OFL Fredoka. In-game Credits includes `assets/licenses/NOTICE.txt`, full Fredoka OFL text and the engine's own MIT/third-party notices.
+
+Rider and fart revision (2026-11-21): original sculpted animal riders (hippo, pig, panda, penguin, bunny, cat) built from lathed and tapered procedural meshes; original cel/rim shader `shaders/toon.gdshader`; soft fart puffs use a gradient texture generated in code (no image file). The animal designs are original and are not copied from any game. No downloaded models, textures or sounds.
+
+Wrap-up (2026-11-22): the music loop is now `assets/audio/sky_theme.ogg` (OGG Vorbis, encoded from the same original synthesized track by `tools/generate_audio.py` with ffmpeg), following the lab rule of `.ogg` for music and `.wav` for short effects. Effects stay original WAV files.
+
+Graphics and game-feel pass (2026-11-22): all new art is original and generated in code, with no image, model or sound files added.
+- Riders: one sculpted pear-shaped body per animal with the butt built into the silhouette (`RiderSculpt.pear_body`), plus new tails, back markings and happy-eye faces. Secondary motion (jiggle, arm flail, tail wag, butt glow) runs in the original `shaders/toon.gdshader`.
+- Water: the original stylized `shaders/route_water.gdshader` uses a 128 x 128 tiling pattern built from sine formulas at runtime (`RaceEffects.water_pattern`: caustic web, flow streaks, foam noise, sparkles).
+- Effects: the cartoon fart puff (`RaceEffects.puff_texture`) and cloud card (`SkyDecor.cloud_texture`) textures are drawn pixel by pixel in code. Foam rings, droplets and splashes are procedural meshes and CPU particles.
+- Scenery: original `shaders/flag.gdshader` (waving pennants), `shaders/bob.gdshader` (floating hot-air and party balloons), and updated `sky.gdshader` and `route_cliff.gdshader`.
+- The reference clip `snaptik_7696703905740164374_v3.mp4` was used only to judge feel and polish. No characters, art, levels or colours were copied from it, and it is not in any export.

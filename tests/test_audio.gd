@@ -19,7 +19,6 @@ func test_original_pcm_assets_have_signal_headroom_and_valid_loop_seams() -> voi
 	for key: String in audio.SOUNDS:
 		resources.append(audio.SOUNDS[key])
 	resources.append(audio.voices[0].stream)
-	resources.append(audio.music.stream)
 	for stream: AudioStreamWAV in resources:
 		assert_eq(stream.mix_rate, 22050)
 		assert_eq(stream.format, AudioStreamWAV.FORMAT_16_BITS)
@@ -35,13 +34,20 @@ func test_original_pcm_assets_have_signal_headroom_and_valid_loop_seams() -> voi
 		assert_lt(peak, 0.73)
 		assert_gt(energy / (stream.data.size() / 2), 0.001)
 		if stream.loop_mode == AudioStreamWAV.LOOP_FORWARD:
-			var filename: String = "thrust_loop" if stream == audio.voices[0].stream else "sky_theme"
-			var original: AudioStreamWAV = load("res://assets/audio/%s.wav" % filename)
+			var original: AudioStreamWAV = load("res://assets/audio/thrust_loop.wav")
 			assert_eq(stream.loop_end, original.data.size() / 2, "Full original period retained")
 			assert_lt(stream.loop_end, stream.data.size() / 2, "Loop endpoint remains within allocated PCM")
 			assert_eq(stream.data.slice(0, original.data.size()), original.data, "Original samples stay unchanged")
 			assert_eq(stream.data.slice(original.data.size()), original.data.slice(0, 2), "Guard frame repeats the loop start")
 			assert_lt(absf(original.data.decode_s16(0) - original.data.decode_s16(original.data.size() - 2)) / 32768.0, 0.04)
+
+func test_music_is_a_looping_ogg_and_effects_are_wav() -> void:
+	# Lab PDF p. 4: ".ogg for music, .wav for short effects".
+	assert_true(audio.music.stream is AudioStreamOggVorbis)
+	assert_true((audio.music.stream as AudioStreamOggVorbis).loop)
+	assert_almost_eq(audio.music.stream.get_length(), 8.0, 0.02)
+	for key: String in audio.SOUNDS:
+		assert_true(audio.SOUNDS[key] is AudioStreamWAV, "%s is a .wav effect" % key)
 
 func test_music_mixes_across_multiple_full_length_wraps() -> void:
 	var playback: AudioStreamPlayback = audio.music.stream.instantiate_playback()
@@ -50,8 +56,7 @@ func test_music_mixes_across_multiple_full_length_wraps() -> void:
 	var mixed: PackedVector2Array = playback.mix_audio(1.0, frames)
 	assert_eq(mixed.size(), frames)
 	assert_true(playback.is_playing(), "Music remains active beyond two eight-second loops")
-	# WAV playback does not implement the base loop counter. Its cursor must
-	# have wrapped twice and reached the first second of the third period.
+	# The cursor must have wrapped twice and reached the first second of the third period.
 	assert_almost_eq(playback.get_playback_position(), 1.0, 0.05)
 	var peak: float = 0.0
 	var finite: bool = true

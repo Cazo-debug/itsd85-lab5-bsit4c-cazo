@@ -13,11 +13,12 @@ var crew_profile_label: Label
 var crew_control_button: Button
 var save_status: Label
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+const OUTFIT_NAMES: Array[String] = ["Red", "Yellow", "Green", "Teal", "Blue", "Purple", "Pink", "White"]
 
 func _ready() -> void:
 	Audio.play_music()
 	rng.randomize()
-	theme = preload("res://assets/GameTheme.tres")
+	theme = UiTheme.get_theme()
 	var background: TextureRect = TextureRect.new()
 	var gradient: Gradient = Gradient.new()
 	gradient.colors = PackedColorArray([Color("6ec6f0"), Color("bdebfb"), Color("eef9ff")])
@@ -38,7 +39,7 @@ func _ready() -> void:
 	margins.add_theme_constant_override("margin_bottom", 24)
 	add_child(margins)
 	content = VBoxContainer.new()
-	content.add_theme_constant_override("separation", 16)
+	content.add_theme_constant_override("separation", 18)
 	margins.add_child(content)
 	if screen == "AvatarCreator":
 		build_creator()
@@ -47,23 +48,46 @@ func _ready() -> void:
 	else:
 		build_menu()
 
-func label(text: String, size: int = 32) -> Label:
+## role: "" body · "title" · "heading" · "caption" (see UiTheme). size > 0 overrides the role size.
+func label(text: String, size: int = 0, role: String = "") -> Label:
 	var item: Label = Label.new()
 	item.text = text
 	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	item.add_theme_font_size_override("font_size", size)
+	item.theme_type_variation = {"title": &"TitleLabel", "heading": &"HeadingLabel", "caption": &"CaptionLabel"}.get(role, &"")
+	if size > 0:
+		item.add_theme_font_size_override("font_size", size)
 	return item
 
-func button(text: String, action: Callable, parent: Node = content) -> Button:
+## kind: "primary" (one per screen) · "" secondary · "ghost" (Back, minor) · "danger" (quit/leave).
+func button(text: String, action: Callable, parent: Node = content, kind: String = "") -> Button:
 	var item: Button = Button.new()
 	item.text = text
-	item.custom_minimum_size = Vector2(120, 120)
+	item.custom_minimum_size = Vector2(120, 136 if kind == "primary" else 120)
 	item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	item.theme_type_variation = {"primary": &"PrimaryButton", "ghost": &"GhostButton", "danger": &"DangerButton"}.get(kind, &"")
 	item.pressed.connect(action)
 	item.pressed.connect(Audio.play_sfx.bind("ui"))
 	parent.add_child(item)
 	return item
+
+func row(parent: Node = content) -> HBoxContainer:
+	var line: HBoxContainer = HBoxContainer.new()
+	line.add_theme_constant_override("separation", 16)
+	parent.add_child(line)
+	return line
+
+func spacer(parent: Node = content, height: float = 0.0) -> Control:
+	var gap: Control = Control.new()
+	if height > 0.0:
+		gap.custom_minimum_size.y = height
+	else:
+		gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	parent.add_child(gap)
+	return gap
+
+func back_button() -> Button:
+	return button("Back", back, content, "ghost")
 
 func go(destination: String) -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/%s.tscn" % destination)
@@ -92,9 +116,12 @@ func start() -> void:
 	go("MainMenu" if GameState.has_avatar() else "AvatarCreator")
 
 func build_menu() -> void:
-	var spacer: Control = Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(spacer)
+	if screen == "MainMenu":
+		build_main_menu()
+		return
+	var top_gap: Control = Control.new()
+	top_gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(top_gap)
 	content.add_child(label("TOOT\nTUBES" if screen == "Title" else screen.capitalize(), 76 if screen == "Title" else 52))
 	match screen:
 		"Title":
@@ -117,7 +144,21 @@ func build_menu() -> void:
 	var bottom_space: Control = Control.new()
 	bottom_space.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(bottom_space)
-	button("Exit" if screen == "Title" else "Back", back)
+	button("Exit" if screen == "Title" else "Back", back, content, "ghost")
+
+func build_main_menu() -> void:
+	content.add_child(label("TOOT TUBES", 0, "title"))
+	content.add_child(label("Ahoy, %s!" % GameState.avatar.get("name", "Player")))
+	build_preview(260)
+	model.configure(GameState.local_profiles, GameState.crew_slots, GameState.leader_profile)
+	button("Play", go.bind("ModeSelect"), content, "primary")
+	var middle: HBoxContainer = row()
+	button("Courses", go.bind("LevelSelect"), middle)
+	button("Avatar", open_avatar, middle)
+	var minor: HBoxContainer = row()
+	button("Settings", go.bind("Settings"), minor, "ghost")
+	button("Credits", go.bind("Credits"), minor, "ghost")
+	back_button()
 
 func play_level_one() -> void:
 	GameState.mode = "offline"
@@ -127,9 +168,9 @@ func play_level_one() -> void:
 func build_creator() -> void:
 	GameState.selected_profile = clampi(GameState.selected_profile, 0, CrewData.MAX_RIDERS - 1)
 	draft = AvatarData.sanitize(GameState.local_profiles[GameState.selected_profile])
-	content.add_child(label("MAKE A SPLASH", 44))
-	content.add_child(label("Profile %d / %s" % [GameState.selected_profile + 1, creator_seat_label()], 28))
-	build_preview(280)
+	content.add_child(label("YOUR RIDER", 0, "heading"))
+	content.add_child(label("Profile %d · %s" % [GameState.selected_profile + 1, creator_seat_label()], 0, "caption"))
+	build_preview(260)
 	refresh_creator_preview()
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -140,8 +181,9 @@ func build_creator() -> void:
 	options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	options.add_theme_constant_override("separation", 12)
 	scroll.add_child(options)
-	options.add_child(label("Swipe up for more options", 28))
-	options.add_child(label("Previewing this rider's ring style", 28))
+	var name_title: Label = label("Name", 0, "caption")
+	name_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	options.add_child(name_title)
 	name_field = LineEdit.new()
 	name_field.placeholder_text = "Your name"
 	name_field.max_length = 12
@@ -150,32 +192,35 @@ func build_creator() -> void:
 	name_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_DEFAULT
 	options.add_child(name_field)
 	for key: String in AvatarData.LIMITS:
-		var row: HBoxContainer = HBoxContainer.new()
-		options.add_child(row)
-		button("◀", cycle.bind(key, -1), row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		var line: HBoxContainer = row(options)
+		button("◀", cycle.bind(key, -1), line).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		var value_label: Label = label("")
 		value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(value_label)
+		line.add_child(value_label)
 		option_labels[key] = value_label
-		button("▶", cycle.bind(key, 1), row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		button("▶", cycle.bind(key, 1), line).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	refresh_labels()
-	var actions: HBoxContainer = HBoxContainer.new()
-	content.add_child(actions)
+	var actions: HBoxContainer = row()
 	button("Randomize", randomize_avatar, actions)
-	button("Save", save_avatar, actions)
-	save_status = label("", 28)
+	button("Save", save_avatar, actions, "primary").size_flags_stretch_ratio = 1.4
+	save_status = label("", 0, "caption")
 	save_status.visible = false
 	content.add_child(save_status)
-	button("Back", back)
+	back_button()
 
 func refresh_labels() -> void:
 	for key: String in option_labels:
 		var value: String = str(int(draft[key]) + 1)
+		var title: String = key.replace("_", " ").capitalize()
 		match key:
+			"skin":
+				title = "Animal"
+				value = AvatarData.ANIMALS[draft[key]].capitalize()
+			"outfit": value = OUTFIT_NAMES[draft[key]]
 			"float_style": value = AvatarData.FLOAT_STYLES[draft[key]].capitalize()
 			"hat": value = AvatarData.HATS[draft[key]].capitalize()
 			"toot": value = AvatarData.TOOT_COLORS[draft[key]].capitalize()
-		option_labels[key].text = "%s\n%s" % [key.replace("_", " ").capitalize(), value]
+		option_labels[key].text = "%s\n%s" % [title, value]
 
 func cycle(key: String, direction: int) -> void:
 	draft[key] = posmod(int(draft[key]) + direction, AvatarData.LIMITS[key])
@@ -231,14 +276,14 @@ func refresh_creator_preview() -> void:
 	# Creator keeps the edited style visible; crew uses the chosen leader's style.
 
 func build_crew() -> void:
-	content.add_theme_constant_override("separation", 12)
-	content.add_child(label("ONE RING. YOUR CREW.", 44))
-	content.add_child(label("A winding waterpark above the clouds", 28))
-	build_preview(220)
+	content.add_theme_constant_override("separation", 14)
+	content.add_child(label("YOUR CREW", 0, "heading"))
+	content.add_child(label("Tap a seat to choose who rides", 0, "caption"))
+	build_preview(200)
 	var seats: GridContainer = GridContainer.new()
 	seats.columns = 2
-	seats.add_theme_constant_override("h_separation", 12)
-	seats.add_theme_constant_override("v_separation", 8)
+	seats.add_theme_constant_override("h_separation", 14)
+	seats.add_theme_constant_override("v_separation", 12)
 	content.add_child(seats)
 	for index: int in range(CrewData.MAX_RIDERS):
 		var seat_button: Button = button("", select_seat.bind(index), seats)
@@ -252,30 +297,29 @@ func build_crew() -> void:
 	content.add_child(scroll)
 	var options: VBoxContainer = VBoxContainer.new()
 	options.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	options.add_theme_constant_override("separation", 12)
+	options.add_theme_constant_override("separation", 14)
 	scroll.add_child(options)
-	crew_status = label("", 28)
+	crew_status = label("", 0, "caption")
 	options.add_child(crew_status)
-	var profile_row: HBoxContainer = HBoxContainer.new()
-	options.add_child(profile_row)
-	button("<", cycle_crew_profile.bind(-1), profile_row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	crew_profile_label = label("", 28)
+	var profile_row: HBoxContainer = row(options)
+	button("◀", cycle_crew_profile.bind(-1), profile_row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	crew_profile_label = label("")
 	crew_profile_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	profile_row.add_child(crew_profile_label)
-	button(">", cycle_crew_profile.bind(1), profile_row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button("▶", cycle_crew_profile.bind(1), profile_row).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	crew_control_button = button("", cycle_control, options)
-	var actions: HBoxContainer = HBoxContainer.new()
-	options.add_child(actions)
+	var actions: HBoxContainer = row(options)
 	button("Edit rider", edit_crew_profile, actions)
 	button("Make leader", make_leader, actions)
-	button("Control this seat", control_selected_seat, options)
-	options.add_child(label("Scroll for rider options. Assistants steer with you.\nThe leader chooses the shared ring style.", 28))
-	var play_row: HBoxContainer = HBoxContainer.new()
-	content.add_child(play_row)
-	button("Start Sky Garden", launch_sky.bind(false), play_row).add_theme_font_size_override("font_size", 28)
-	button("Practice", launch_sky.bind(true), play_row).add_theme_font_size_override("font_size", 28)
-	button("Choose course", go.bind("LevelSelect"), options)
-	button("Back", back)
+	button("Control this seat", control_selected_seat, options, "ghost")
+	button("Choose course", go.bind("LevelSelect"), options, "ghost")
+	options.add_child(label("Assistants are computer riders that push with you.
+The leader picks the ring's look.", 0, "caption"))
+	# Main action pinned in the thumb zone: one big Start, Practice beside it.
+	var play_row: HBoxContainer = row()
+	button("Practice", launch_sky.bind(true), play_row)
+	button("Start Sky Garden", launch_sky.bind(false), play_row, "primary").size_flags_stretch_ratio = 1.7
+	back_button()
 	refresh_crew()
 
 func select_seat(index: int) -> void:
@@ -299,11 +343,17 @@ func refresh_crew() -> void:
 			if slot.profile == GameState.leader_profile:
 				detail += " · Leader"
 		crew_buttons[index].text = "%d · %s\n%s" % [index + 1, title, detail]
-		crew_buttons[index].modulate = Color("fff1ad") if index == selected_seat else Color.WHITE
+		if index == selected_seat:
+			var picked: StyleBoxFlat = UiTheme.box(Color("fff7d6"), Color("ffb627"), 6, 5)
+			crew_buttons[index].add_theme_stylebox_override("normal", picked)
+			crew_buttons[index].add_theme_stylebox_override("hover", picked)
+		else:
+			crew_buttons[index].remove_theme_stylebox_override("normal")
+			crew_buttons[index].remove_theme_stylebox_override("hover")
 	var slot: Dictionary = GameState.crew_slots[selected_seat]
-	crew_status.text = "Seat %d selected · scroll for options" % (selected_seat + 1)
+	crew_status.text = "Seat %d selected" % (selected_seat + 1)
 	crew_profile_label.text = "Profile %d\n%s" % [selected_crew_profile() + 1, GameState.local_profiles[selected_crew_profile()].get("name", "Player")]
-	crew_control_button.text = "Seat: %s (tap to change)" % {"empty": "Empty", "local": "Local rider", "assist": "Assistant", "peer": "Peer"}[slot.control]
+	crew_control_button.text = "Seat: %s  ▸" % {"empty": "Empty", "local": "Local rider", "assist": "Assistant", "peer": "Peer"}[slot.control]
 
 func persist_crew() -> void:
 	refresh_crew()

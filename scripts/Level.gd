@@ -67,6 +67,7 @@ func _ready() -> void:
 	player.fell.connect(hud.controls.clear)
 	player.recovered.connect(hud.controls.clear)
 	player.recovered.connect(camera.snap)
+	player.fart_burst.connect(camera.kick)
 	player.thrust_started.connect(mark_tutorial_seen)
 	if online:
 		brain.enabled = false
@@ -122,7 +123,7 @@ func run_snapshot() -> Dictionary:
 	for seat: int in range(4):
 		crew.append({"occupied": player.seat_control[seat] != "empty", "gas": player.gas[seat],
 			"firing": player.firing[seat], "name": player.avatars[player.slots[seat].profile].get("name", "Player") if player.seat_control[seat] != "empty" else "Empty"})
-	return {"state": State.keys()[state], "course": definition.name, "section": section,
+	return {"state": State.keys()[state], "course": definition.name, "goal": definition.get("goal_text", ""), "section": section,
 		"time_left": time_left, "race_time": race_time, "countdown": maxi(1, 3 - int(state_time)),
 		"progress": player.route_s / course.path.length, "crew": crew, "practice": practice,
 		"falling": player.falling, "sound": GameState.settings.sound, "result": result.duplicate(),
@@ -229,6 +230,10 @@ func handle_action(action: String) -> void:
 				if not destination.is_empty():
 					leave_scene(destination)
 		"menu": leave_scene("res://scenes/ui/MainMenu.tscn")
+		"recover":
+			if state == State.PAUSED:
+				toggle_pause()
+			recover()
 		"sound":
 			settings_save_error = CampaignFlow.toggle_sound(GameState)
 			hud.present(run_snapshot())
@@ -281,13 +286,23 @@ func leave_scene(destination: String) -> void:
 	hud.controls.clear()
 	get_tree().change_scene_to_file(destination)
 
+## Android back / Escape: during a run it opens the pause menu (and closes it again),
+## so an accidental edge swipe never throws the run away. Elsewhere it leaves.
+func handle_back() -> void:
+	if state == State.RACING or (state == State.PAUSED and not online):
+		toggle_pause()
+	elif state == State.PAUSED:
+		return # online: only the host resumes; Leave crew is in the pause menu
+	else:
+		return_to_menu()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		return_to_menu()
+		handle_back()
 		get_viewport().set_input_as_handled()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST and is_instance_valid(player):
-		return_to_menu()
+		handle_back()
 	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT and state == State.RACING:
 		toggle_pause()

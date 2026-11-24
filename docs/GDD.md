@@ -1,56 +1,71 @@
-# Toot Tubes - Game Design Document
+# Toot Tubes
 
-Status: Phases 1-4 implemented, updated 2026-11-05; laptop checks pass, human play and real-phone acceptance deferred. Main Play opens Offline/Host/Join selection; Courses opens the five-course offline campaign. Practice remains untimed. These eleven headings remain provisional until the original lab PDF is supplied. The root IMPLEMENTATION_PLAN.md and ENVIRONMENT_SPEC.md are authoritative.
+Team: Cazo (Carlos Fidel G. Castro, solo developer)          Platform: Android          Orientation: portrait
 
-| Area | Implemented baseline | v3 target still pending |
-|---|---|---|
-| Riders and saves | Four profiles, validated local/network seats, version-2 migration and online/offline storage isolation | Physical-phone relaunch acceptance |
-| Preview and navigation | One-ring four-slot lobby, ready/course/start/leave, creator/crew and offline controller bindings | Four-phone human/wireless acceptance |
-| Course and movement | Five courses, host-only LAN ring physics, interpolated guests, sustained gas, curved/elevated terrain, progression and shared results/rematch | Phone LAN validation and Phase 5 presentation/audio polish |
-| Validation | 78 tests, 128 process-based network checks; retained 45 campaign cases, ordered UI campaign, fresh reload and rendered portrait evidence | Human play, real-phone and airplane-mode acceptance |
+## 1. Pitch (one sentence)
+A cooperative party game where up to four cartoon animals share one swim ring and must steer it through sky-high waterpark courses using nothing but their farts.
 
-## 1. Title and pitch
+## 2. Genre and target players
+Casual co-op physics party game for players aged 10+ who play with friends on the same Wi-Fi or alone. Easy to start, with chaotic fun when several players push the ring at once.
 
-Toot Tubes: up to four friends cooperate on one inflatable swim ring through original curved, elevated waterpark obstacle courses, steering with coordinated fart thrust.
+## 3. Core mechanic and touch controls
+Every few seconds the player aims and farts to push the shared ring:
+- **AIM pad (left thumb):** choose a direction. Your rider walks around the rim toward it.
+- **HOLD button (right thumb):** hold to fart. Your rider pushes the ring away from its seat while a cloud bursts out behind it. Release to coast.
+- **Gas meter:** each rider has their own gas. It drains while farting and refills while resting; beans on the course refill it.
+- Riders' pushes combine on the one ring, so timing and direction matter. Walls and hazards bump the ring; holes and edges drop it.
 
-## 2. Audience and platform
+## 4. Goal, win condition, lose condition
+- **Goal:** bring the whole crew to the finish of the course before the timer runs out.
+- **Win:** the ring crosses the finish line in time. Stars: more than 50% of the time left = 3 stars, more than 25% = 2, otherwise 1.
+- **Lose:** the timer reaches 0 → result screen with Retry.
+- Falling off the course is not a loss: the crew restarts at the last checkpoint while the clock keeps running.
 
-Android portrait, Godot 4.7.2 standard/GDScript, Compatibility renderer. Desktop supports development and independent seat tests; actual four-human play is LAN co-op in Phase 4.
+## 5. Level plan
+| Level | Goal (shown at start) | What is new or harder | Time limit |
+|---|---|---|---|
+| 1 Sky Garden | Reach the summit together in 240 s. Aim, then hold to fart! | Learn aim/hold; bends, bridge, climb, hairpin; bumpers, current, sweeper, mallet, crossbar, 2 holes | 240 s |
+| 2 Canyon Switchbacks | Cross the canyon in 260 s. Dodge the mallets and boulders! | Paired swinging mallets, sliding spiked gate, rolling boulders, exposed canyon bend | 260 s |
+| 3 Cloud Bridges | Cross the sky bridges in 270 s. Time the crushers! | Very narrow 8 m bridges with timed crushers and high drops | 270 s |
+| 4 Spiral Springs | Ride the spiral in 290 s. Beat the currents and whirlpools! | Side currents and whirlpools that pull the ring, on a climbing spiral | 290 s |
+| 5 Festival Summit | Final challenge: reach the summit in 300 s! | Longest course combining every hazard type (11 hazards) | 300 s |
 
-## 3. Core gameplay and controls
+Every level has two safe checkpoints. A **Practice** mode replays Level 1's sections with no timer.
 
-Implemented: aim, hold to thrust, release to stop, repeat as needed. Each rider has independent continuous gas and effects; their forces combine on one ring. Momentum, water resistance, gravity and collisions produce drift, yaw, pitch and roll. This control mapping is our design choice, not a verified mapping from the reference video. The old water-tap/three-charge mechanic is isolated in legacy regression fixtures.
+## 6. Unlocking rule
+- Level 1 is open. Clearing level n unlocks level n+1; locked levels show a lock and cannot be opened.
+- Best stars and best time per level are saved on the phone (`user://save.cfg`, Godot `ConfigFile`) before the result screen, so progress survives closing the app.
 
-## 4. Goals, win and loss
+## 7. Offline mode
+- **Solo campaign + versus-the-clock**, playable in airplane mode with no network code running.
+- The player controls one rider and can add up to three **computer assistant riders** in Crew Setup. Assistants use the same gas and physics rules.
 
-The entire crew completes the course together. Cooperative success/timeout uses the retained star thresholds and per-course budgets checked with 1-4 riders; human difficulty review is deferred. Practice has no time limit. Falling resets the shared ring at a safe checkpoint while the timer continues. There is no rival ring, opponent finish or individual finishing place. Ordinary solid hazards push/tip; holes and exposed edges remove support.
+## 8. Online mode
+- **Co-op, real time**, 2 phones (up to 4) on the same Wi-Fi (lab Option A).
+- One phone taps **Host a game** and shows its IP; the others type it and tap **Join**. Godot ENet, port 7777.
+- **Data sent:**
+  - Guests send only their own seat's aim direction and hold state.
+  - The host simulates the ring and sends its position, rotation and speed, each rider's gas and the run state (timer, checkpoint, finish).
+- **The host decides the result:** it checks the finish and the timer and sends one shared result to every phone. Guests' messages are validated (own seat only, rate and strength limits).
+- If a guest leaves, that seat goes empty. If the host leaves or cannot be reached, guests see a clear message and return to Mode Select.
+- Online results **do not** change offline unlocks.
 
-## 5. Level progression
+## 9. Screens list
+Title → Avatar creator (first launch) → Main menu (Play, Courses, Avatar, Settings, Credits) → Mode select (Play offline / Host a game / Join) → Crew setup or Lobby → Level select → Game (HUD with AIM and HOLD, timer, gas) → Pause (Resume, Restart, Recover, Sound, Quit) → Result (stars, time, Retry / Next / Menu). Every screen has Back, and the Android back gesture works.
 
-Five implemented original courses: Sky Garden, Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit. Routes mix bends, narrow passages, broad pools, climbs, descents and dips. Vary widths, flow and obstacle timing. Phase 3 adds course locks, cooperative results, Retry/Next/Menu, pause/restart/sound/quit and contextual hints. Existing unlocks/best times/stars and version-2 saves are preserved; online results remain isolated from offline progression.
+## 10. Art and sound style + asset sources and licences
+- **Art:** bright cartoon sky waterpark built in code from Godot primitives and generated meshes:
+  - turquoise water, coral cliffs, green rims, clouds
+  - six original chunky animal riders (hippo, pig, panda, penguin, bunny, cat) with toon shading
+  - soft lime fart clouds
+  - no downloaded models or textures
+- **Sound:** original synthesized effects (`.wav`) and an original music loop (`.ogg`), generated by `tools/generate_audio.py`.
+- **Licences:** Fredoka font (SIL OFL), Godot (MIT), GUT test framework (MIT, not shipped). Full list in [CREDITS.md](CREDITS.md). Nothing is taken from commercial games.
 
-Phase 2's revised delivery requires those core shapes in playable Sky Garden itself: launch pool, garden S-bends, narrow sky bridge, climb/crest, canyon hairpin and descent, obstacle garden and shared finish. Six playable hazard types include the spiked crossbar alongside bumpers, current, sweeper, mallet and holes. Start Sky Garden and untimed Practice must be reachable through the existing crew screen; a changed preview does not count as the new environment.
-
-## 6. Modes and multiplayer
-
-One ring in every mode. Offline offers a local rider and configurable cooperative seat assistants; the four-slot architecture also supports local development controllers. Phase 4 implements two-to-four-peer owned seats on the same host-simulated ring via ENet/LAN, port 7777, with laptop process validation. Four-human phone acceptance remains required. Guests submit validated aim/held state and interpolate the host's 3D pose, velocities, gas and run state. Guest departure releases input and vacates its seat; host loss or connection timeout returns guests to Mode Select with an explanation. The host controls start/recovery/resume/rematch; every peer sees one result. Online crew and results never replace offline profiles or advance progression.
-
-## 7. Characters and customization
-
-Four independently identifiable riders face outward and move around the shared rim when aiming, with spacing constraints. Their clothed rear panels turn red during actual thrust, then cool. Orbit positions drive the real force lever arms and supported weight shift. Preserve original procedural riders, skin/outfit/hat/toot choices and twelve-character names. Migrate existing avatar data into local profile 0 without deleting saved float styles. Ring appearance is shared. Empty slots have no rider or thrust. The creator previews up to four occupants while editing one selected profile.
-
-## 8. Visual style and terrain
-
-Colorful sky waterpark with turquoise water, orange/coral cliffs, green rims, clouds, foliage and floating scenery. Generate continuous 3D ribbon courses with matching collision; the water height and forward direction vary along the route. Use shared materials, primitive decorations, MultiMesh repeats and CPU particles. WaterStyle supplies shared wave parameters for rendering and buoyancy; wakes, foam and spray show interaction without full fluid simulation. Original layouts/characters/artwork; no commercial asset copying. No real-time shadows.
-
-## 9. Audio
-
-Original thrust attack/loop/release hooks, impact/fall/pickup/UI effects, optional credited CC0 music and saved audio controls. The existing Audio autoload remains a silent stub; production audio belongs to Phase 5.
-
-## 10. Interface and accessibility
-
-Retain Title, first-use Avatar Creator, Main Menu and Back navigation. Phase 1 adds four-slot crew preview/profile management. Phase 2 adds aim/hold controls, compact rider gas/status labels, one crew progress indicator, goal and timer. Keep minimum 28 px body text, 120 px touch targets and the top 80 px safe area at 720 x 1280. Do not place four full control panels on one phone. Touch release and focus loss clear held state. Reduced-motion settings remain polish work.
-
-## 11. Technical plan and validation
-
-Phase 1: four-rider foundation and safe save migration. Phase 2: one rigid-body ring, continuous thrust, curved/elevated terrain and working obstacle prototype. Phase 3: five cooperative courses and complete offline flow. Phase 4: four-human LAN co-op. Phase 5: polish and release. Tests separately prove save migration, multi-seat input, real torque/tilt/vertical motion, path projection, hazard response, group recovery and legal-input solvability. Desktop results are distinct from human/phone acceptance. Targets remain 60 FPS mid-range / 30 FPS low-end, under 150 draw calls and 60k visible triangles, APK under 60 MB; all require fresh measurement after migration.
+## 11. Risks and simpler fallbacks
+| Risk | Fallback |
+|---|---|
+| Physics too hard to control for new players | Practice mode, contextual hints, generous time limits |
+| Online lag between phones | Host-authoritative ring with interpolation on guests; inputs expire so thrust can't get stuck |
+| Low-end phone frame rate | Low quality setting (fewer particles and decorations, same physics) |
+| Players can't find each other online | IP shown on the host screen, 5-second join timeout with a "same Wi-Fi" message |

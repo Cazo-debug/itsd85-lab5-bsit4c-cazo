@@ -62,9 +62,9 @@ try {
 		& $engine --headless --path . --editor --import *> (Join-Path $logs 'phase5-build-import.log')
 		if ($LASTEXITCODE -ne 0) { throw 'Godot import failed.' }
 		$builds = @(
-			@('--export-debug', 'Android Debug', 'TootTubes-phase5-debug.apk', 'debug'),
-			@('--export-release', 'Android Release', 'TootTubes-0.7.0-rc1-release.apk', 'android-release'),
-			@('--export-release', 'Windows Portable', 'TootTubes-0.7.0-rc1.exe', 'windows')
+			@('--export-debug', 'Android Debug', 'TootTubes-v1.0-debug.apk', 'debug'),
+			@('--export-release', 'Android Release', 'TootTubes-v1.0.apk', 'android-release'),
+			@('--export-release', 'Windows Portable', 'TootTubes-v1.0.exe', 'windows')
 		)
 		$manifest = [Collections.Generic.List[object]]::new()
 		foreach ($build in $builds) {

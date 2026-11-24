@@ -1,11 +1,22 @@
 shader_type spatial;
-render_mode cull_disabled, specular_schlick_ggx;
+// Stylized route water. Unshaded on purpose: the lit version cost ~21 ms per frame on
+// the Mali-G57 MP1 test phone. Light, fresnel and glints are faked here instead.
+// UV = (distance along route, lateral metres); UV2 = (|lateral| / half width, half width);
+// COLOR = route tangent. The waves match WaterStyle.displacement (physics support).
+render_mode unshaded, cull_disabled;
 
 uniform vec3 deep_color : source_color = vec3(0.03, 0.49, 0.67);
 uniform vec3 shallow_color : source_color = vec3(0.24, 0.85, 0.83);
 uniform vec3 foam_color : source_color = vec3(0.93, 1.0, 1.0);
+// R caustic web, G flow streaks, B foam noise, A sparkle dots (RaceEffects.water_pattern).
+uniform sampler2D pattern : filter_linear_mipmap, repeat_enable;
+// 1 = High quality (second caustic layer, streaks, sparkles); 0 = Low.
+uniform float detail = 1.0;
 uniform vec3 holes[8];
 uniform int hole_count = 0;
+// Nearby obstacle bases in route space (s, lateral, radius), refreshed from Level.race_time.
+uniform vec3 obstacles[4];
+uniform int obstacle_count = 0;
 uniform float water_time = 0.0;
 uniform float wave_amplitude = 0.10;
 uniform vec4 wave_a = vec4(0.70, 0.18, 1.8, 1.0);
@@ -13,8 +24,11 @@ uniform vec4 wave_b = vec4(1.10, -0.35, -1.2, 0.45);
 uniform vec2 ring_uv = vec2(-100.0);
 uniform vec2 wake_velocity = vec2(0.0);
 uniform bool ring_supported = false;
-varying vec3 flow_view;
-varying vec3 lateral_view;
+uniform vec3 sun_direction = vec3(-0.35, 0.75, 0.55);
+
+varying float v_shade;
+varying float v_crest;
+varying float v_glint;
 
 void vertex() {
 	float a = dot(UV, wave_a.xy) - water_time * wave_a.z;
@@ -24,43 +38,83 @@ void vertex() {
 	vec3 forward = normalize(COLOR.rgb * 2.0 - 1.0);
 	vec3 side = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
 	VERTEX.y += h;
-	NORMAL = normalize(cross(side + vec3(0.0, slope.y, 0.0), forward + vec3(0.0, slope.x, 0.0)));
-	flow_view = (MODELVIEW_MATRIX * vec4(forward, 0.0)).xyz;
-	lateral_view = (MODELVIEW_MATRIX * vec4(side, 0.0)).xyz;
+	// Exaggerate the slope for shading only, so small waves still read on a phone.
+	vec3 n = normalize(cross(side + vec3(0.0, slope.y * 3.0, 0.0), forward + vec3(0.0, slope.x * 3.0, 0.0)));
+	NORMAL = n;
+	vec3 world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec3 view = normalize(INV_VIEW_MATRIX[3].xyz - world);
+	vec3 world_normal = normalize((MODEL_MATRIX * vec4(n, 0.0)).xyz);
+	float fresnel = pow(1.0 - clamp(dot(world_normal, view), 0.0, 1.0), 4.0);
+	float edge = smoothstep(0.40, 1.0, UV2.x);
+	v_shade = clamp(edge * 0.80 + fresnel * 0.60, 0.0, 1.0);
+	v_crest = h / max(wave_amplitude * 1.45, 0.001);
+	v_glint = pow(max(dot(reflect(-view, world_normal), normalize(sun_direction)), 0.0), 24.0);
 }
 
 void fragment() {
-	float hole_foam = 0.0;
-	for (int i = 0; i < 8; i++) {
-		if (i < hole_count) {
-			float edge = distance(UV, holes[i].xy) - holes[i].z;
-			if (edge < 0.0) { discard; }
-			hole_foam = max(hole_foam, 1.0 - smoothstep(0.04, 0.28, edge));
+	// Route coordinates stay highp (s reaches hundreds of metres); colour maths runs at
+	// mediump (fp16 on Mali). Foam terms only run near banks, obstacles and the float.
+	mediump float foam = 0.0;
+	for (int i = 0; i < hole_count; i++) {
+		float edge = distance(UV, holes[i].xy) - holes[i].z;
+		if (edge < 0.0) { discard; }
+		foam = max(foam, 1.0 - smoothstep(0.05, 0.55, edge));
+	}
+	float t = water_time;
+	vec2 across_along = vec2(UV.y, UV.x);
+	mediump vec4 near = texture(pattern, across_along * 0.085 + vec2(0.0, -t * 0.075));
+	mediump float noise = near.b;
+	mediump float caustic = near.r;
+	mediump float streak = 0.0;
+	mediump float sparkle = 0.0;
+	if (detail > 0.5) {
+		mediump vec4 far = texture(pattern, across_along * vec2(0.115, 0.032) + vec2(0.31 + sin(UV.x * 0.05) * 0.06, -t * 0.09));
+		caustic = min(caustic, far.r + 0.04);
+		streak = smoothstep(0.45, 0.8, far.g);
+		sparkle = smoothstep(0.35, 0.8, near.a) * (0.25 + v_glint * 2.5);
+	}
+	caustic = smoothstep(0.90, 0.985, caustic);
+
+	mediump vec3 color = mix(deep_color, shallow_color, v_shade);
+	color = mix(color, shallow_color * 1.1 + vec3(0.05), clamp(v_crest, 0.0, 1.0) * 0.35);
+	color *= 1.0 - clamp(-v_crest, 0.0, 1.0) * 0.10;
+	color += vec3(0.09, 0.16, 0.15) * caustic * (1.0 - v_shade * 0.4);
+
+	mediump float shore_distance = (1.0 - UV2.x) * UV2.y;
+	if (shore_distance < 1.8) {
+		mediump float shore = 1.0 - smoothstep(0.18 + noise * 0.30, 0.34 + noise * 0.30, shore_distance);
+		mediump float line = (1.0 - smoothstep(0.05, 0.14, abs(shore_distance - (0.95 + noise * 0.55 + sin(UV.x * 0.55 - t * 1.4) * 0.12)))) * step(0.42, noise);
+		foam = max(foam, max(shore, line * 0.7));
+	}
+
+	for (int i = 0; i < obstacle_count; i++) {
+		vec2 offset = UV - obstacles[i].xy;
+		float reach = obstacles[i].z + 2.2;
+		if (dot(offset, offset) < reach * reach) {
+			mediump float edge = length(offset) - obstacles[i].z;
+			mediump float pulse = fract(t * 0.55 + float(i) * 0.37);
+			mediump float hug = 1.0 - smoothstep(0.05, 0.30 + noise * 0.35, edge);
+			mediump float ring = (1.0 - smoothstep(0.06, 0.18, abs(edge - pulse * 1.8))) * (1.0 - pulse) * step(0.35, noise);
+			foam = max(foam, max(hug, ring * 0.8));
 		}
 	}
-	vec2 p = vec2(UV.x - water_time * 1.5, UV.y);
-	float small_a = sin(p.x * 4.2 + sin(p.y * 2.5));
-	float small_b = sin(p.x * 2.8 - p.y * 3.1 + water_time * 0.6);
-	NORMAL = normalize(NORMAL - normalize(flow_view) * small_a * 0.095 - normalize(lateral_view) * small_b * 0.075);
-	float fresnel = pow(1.0 - max(dot(normalize(NORMAL), normalize(VIEW)), 0.0), 3.0);
-	float band = sin(p.x * 0.8 + sin(p.y * 0.65)) * 0.5 + 0.5;
-	float caustic = pow(max(0.0, 1.0 - abs(sin(p.x * 1.7 + cos(p.y * 1.6)) * cos(p.y * 1.9 + sin(p.x * 1.2)))), 20.0);
-	float shore_distance = (1.0 - UV2.x) * UV2.y;
-	float shore = (1.0 - smoothstep(0.10, 0.50, shore_distance)) * (0.55 + 0.20 * small_b);
-	float speed = length(wake_velocity);
-	vec2 heading = wake_velocity / max(speed, 0.001);
-	vec2 relative = UV - ring_uv;
-	float along = dot(relative, heading);
-	float across = dot(relative, vec2(-heading.y, heading.x));
-	float wake_line = abs(abs(across) - (1.5 - along * 0.23));
-	float wake = (1.0 - smoothstep(0.08, 0.45, wake_line)) * smoothstep(0.0, 1.5, -along) * (1.0 - smoothstep(3.0, 11.0, -along));
-	float rim = (1.0 - smoothstep(0.08, 0.32, abs(length(relative) - 2.5))) * 0.4;
-	float active = ring_supported ? 1.0 : 0.0;
-	float foam = clamp(max(shore, hole_foam) + active * (wake * min(speed / 5.0, 0.65) + rim), 0.0, 0.85);
-	vec3 base = mix(deep_color, shallow_color, 0.25 + band * 0.20 + fresnel * 0.35);
-	base += vec3(0.08, 0.16, 0.12) * caustic;
-	ALBEDO = mix(base, foam_color, foam);
-	ROUGHNESS = mix(0.20, 0.60, foam);
-	SPECULAR = 0.65;
-	METALLIC = 0.03;
+
+	if (ring_supported) {
+		vec2 relative = UV - ring_uv;
+		if (dot(relative, relative) < 256.0) {
+			mediump float speed = length(wake_velocity);
+			mediump vec2 heading = wake_velocity / max(speed, 0.001);
+			mediump float behind = -dot(relative, heading);
+			mediump float across = dot(relative, vec2(-heading.y, heading.x));
+			// V-shaped wake: two crisp foam arms opening behind the float, broken up by noise.
+			mediump float arm = abs(abs(across) - (1.8 + behind * 0.32));
+			mediump float wake = (1.0 - smoothstep(0.08, 0.20 + noise * 0.22, arm)) * smoothstep(0.0, 1.2, behind) * (1.0 - smoothstep(4.0, 14.0, behind));
+			mediump float churn = (1.0 - smoothstep(0.5, 1.8, abs(across))) * smoothstep(1.6, 2.6, behind) * (1.0 - smoothstep(3.0, 9.0, behind)) * step(0.56, noise);
+			mediump float contact = (1.0 - smoothstep(0.06, 0.26 + noise * 0.22, abs(length(relative) - 2.55))) * 0.85;
+			foam = max(foam, max(contact, (wake + churn * 0.7) * min(speed / 5.0, 0.85)));
+		}
+	}
+	color = mix(color, foam_color, streak * 0.5 * (1.0 - v_shade * 0.5));
+	color += vec3(sparkle);
+	ALBEDO = mix(color, foam_color, clamp(foam, 0.0, 0.95));
 }

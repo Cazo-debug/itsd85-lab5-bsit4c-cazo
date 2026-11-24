@@ -7,6 +7,8 @@ signal bumped
 # Phase 5 can start attack/loop audio and release it from these transitions.
 signal thrust_started(seat: int)
 signal thrust_stopped(seat: int)
+## Presentation only: one visual fart burst from a seat (camera kick, etc.).
+signal fart_burst(seat: int)
 const MAX_RIDERS: int = 4
 var profile: RingPhysicsProfile = RingPhysicsProfile.new()
 var path: CoursePath
@@ -45,6 +47,33 @@ var orbit_motion: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var spray: CPUParticles3D
 var quiet_firing: Array[bool] = [false, false, false, false]
 var quiet_motion: Array[float] = [0.0, 0.0, 0.0, 0.0]
+var wake: CPUParticles3D
+var tags: Array[Label3D] = []
+var burst_pools: Array[Array] = []
+# Two foam rings and two droplet bursts per seat, used alternately so overlapping bursts never cut each other.
+var splashes: Array[CPUParticles3D] = []
+var droplet_pools: Array[Array] = []
+var splash_turn: Array[int] = [0, 0, 0, 0]
+var big_splash: CPUParticles3D
+var big_ring: CPUParticles3D
+var low_effects: bool = false
+## Presentation: the crew cheers after a shared finish (set by RunFeedback).
+var celebrating: bool = false
+var was_falling: bool = false
+var seen_contacts: int = 0
+var contact_direction: Vector3 = Vector3.ZERO
+var airborne: bool = false
+var descent: float = 0.0
+var previous_height: float = 0.0
+var vertical_speed: float = 0.0
+var burst_timers: Array[float] = [0.0, 0.0, 0.0, 0.0]
+var bursts_fired: Array[int] = [0, 0, 0, 0]
+var splash_height: float = 0.0
+var splash_height_valid: bool = false
+var last_velocity: Vector3 = Vector3.ZERO
+var smoothed_acceleration: Vector3 = Vector3.ZERO
+# Visual-only randomness (sound pitch); never used by physics or hazards.
+var visual_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func setup(course_path: CoursePath, profiles: Array[Dictionary], crew: Array[Dictionary], leader_profile: int) -> void:
 	path = course_path
@@ -84,43 +113,42 @@ func _ready() -> void:
 	collision.shape = cylinder
 	add_child(collision)
 	visual = SharedRingPreview.new()
+	visual.driven = true
 	add_child(visual)
 	visual.configure(avatars, slots, leader)
 	visual.bake_moving_parts()
+	# Per rider: a small pool of one-shot burst emitters (the pool size is the hard puff cap).
+	var config: FartConfig = FartConfig.current
 	for index: int in range(MAX_RIDERS):
-		var jet: CPUParticles3D = CPUParticles3D.new()
-		jet.emitting = false
-		jet.amount = 10
-		jet.lifetime = 0.55
-		jet.local_coords = false
-		jet.spread = 20.0
-		jet.gravity = Vector3(0, 0.4, 0)
-		jet.initial_velocity_min = 3.0
-		jet.initial_velocity_max = 5.0
-		jet.scale_amount_min = 0.16
-		jet.scale_amount_max = 0.38
-		var sphere: SphereMesh = SphereMesh.new()
-		sphere.radial_segments = 8
-		sphere.rings = 4
-		var material: StandardMaterial3D = StandardMaterial3D.new()
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.vertex_color_use_as_albedo = true
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		sphere.material = material
-		jet.mesh = sphere
-		jet.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var fade: Gradient = Gradient.new()
-		var color_index: int = avatars[slots[index].profile].toot if slots[index].control != "empty" else 0
-		var color: Color = RaceEffects.PUFF_COLORS[color_index]
-		fade.colors = PackedColorArray([color, Color(color, 0.0)])
-		jet.color_ramp = fade
-		add_child(jet)
-		jet.top_level = true
-		jets.append(jet)
-	var plane: PlaneMesh = PlaneMesh.new()
-	plane.size = Vector2(5.6, 5.6)
+		var pool: Array[CPUParticles3D] = []
+		for slot_index: int in range(config.emitters_per_rider()):
+			var burst: CPUParticles3D = RaceEffects.fart_burst_emitter(gas_color(index), config, config.puffs_per_burst)
+			add_child(burst)
+			burst.top_level = true
+			pool.append(burst)
+		burst_pools.append(pool)
+		jets.append(pool[0])
+		var drops: Array[CPUParticles3D] = []
+		for turn: int in range(2):
+			var splash: CPUParticles3D = RaceEffects.splash_ring()
+			add_child(splash)
+			splash.top_level = true
+			splashes.append(splash)
+			var droplets: CPUParticles3D = RaceEffects.droplets(config.splash_droplets)
+			add_child(droplets)
+			droplets.top_level = true
+			drops.append(droplets)
+		droplet_pools.append(drops)
+	big_splash = RaceEffects.droplets(22, 5.0)
+	add_child(big_splash)
+	big_splash.top_level = true
+	big_ring = RaceEffects.splash_ring()
+	big_ring.amount = 3
+	big_ring.mesh = RaceEffects.foam_ring_mesh(5.5)
+	add_child(big_ring)
+	big_ring.top_level = true
 	ripple = MeshInstance3D.new()
-	ripple.mesh = plane
+	ripple.mesh = RaceEffects.foam_ring_mesh(5.6)
 	ripple.material_override = RaceEffects.ring_material()
 	ripple.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(ripple)
@@ -136,15 +164,50 @@ func _ready() -> void:
 	spray.initial_velocity_max = 2.5
 	spray.scale_amount_min = 0.04
 	spray.scale_amount_max = 0.12
-	var drop: SphereMesh = SphereMesh.new()
-	drop.radial_segments = 6
-	drop.rings = 3
-	drop.material = AvatarModel.material(Color("c8faff"))
-	spray.mesh = drop
+	spray.mesh = RaceEffects.droplet_mesh()
 	spray.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(spray)
 	spray.top_level = true
+	wake = RaceEffects.wake_rings()
+	add_child(wake)
+	wake.top_level = true
+	for index: int in range(MAX_RIDERS):
+		var tag: Label3D = Label3D.new()
+		tag.font = preload("res://assets/fonts/Fredoka.ttf")
+		tag.font_size = 64
+		tag.outline_size = 20
+		tag.outline_modulate = Color("16324a")
+		tag.pixel_size = 0.005
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		tag.no_depth_test = true
+		tag.fixed_size = false
+		tag.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(tag)
+		tag.top_level = true
+		tags.append(tag)
+	refresh_tags()
 	body_entered.connect(_on_contact)
+	prewarm.call_deferred()
+
+## Compile the effect shaders during the intro instead of on the first fart (a ~0.6 s hitch on
+## the test phone): throwaway bursts of each kind, hidden just under the water at the start.
+## They never touch the per-rider pools, so the puff cap and burst counts are unaffected.
+func prewarm() -> void:
+	if not is_inside_tree():
+		return
+	var config: FartConfig = FartConfig.current
+	for emitter: CPUParticles3D in [RaceEffects.fart_burst_emitter(gas_color(0), config, 2), RaceEffects.droplets(2), RaceEffects.splash_ring()]:
+		add_child(emitter)
+		emitter.top_level = true
+		emitter.global_position = global_position - Vector3.UP * 1.2
+		emitter.finished.connect(emitter.queue_free)
+		emitter.restart()
+
+func refresh_tags() -> void:
+	for index: int in range(tags.size()):
+		var occupied: bool = seat_control[index] != "empty"
+		tags[index].text = String(avatars[slots[index].profile].get("name", "")) if occupied else ""
+		tags[index].modulate = Color.WHITE if index == 0 else Color(1, 1, 1, 0.92)
 
 func set_rider_avatar(seat: int, avatar: Dictionary) -> void:
 	if seat < 0 or seat >= MAX_RIDERS or seat_control[seat] == "empty":
@@ -152,10 +215,62 @@ func set_rider_avatar(seat: int, avatar: Dictionary) -> void:
 	avatars[slots[seat].profile] = AvatarData.sanitize(avatar)
 	visual.configure(avatars, slots, leader)
 	visual.bake_moving_parts()
-	for index: int in range(jets.size()):
-		if seat_control[index] != "empty":
-			var color: Color = RaceEffects.PUFF_COLORS[avatars[slots[index].profile].toot]
-			jets[index].color_ramp.colors = PackedColorArray([color, Color(color, 0.0)])
+	for index: int in range(burst_pools.size()):
+		for burst: CPUParticles3D in burst_pools[index]:
+			RaceEffects.set_burst_color(burst, gas_color(index))
+	refresh_tags()
+
+func gas_color(seat: int) -> Color:
+	var colors: Array[Color] = FartConfig.current.colors
+	var index: int = avatars[slots[seat].profile].toot if seat_control[seat] != "empty" else 0
+	return colors[clampi(index, 0, colors.size() - 1)]
+
+## Puffs per burst (quality setting). Changes every pooled emitter of every rider.
+func set_puff_count(puffs: int) -> void:
+	for pool: Array[CPUParticles3D] in burst_pools:
+		for burst: CPUParticles3D in pool:
+			burst.amount = maxi(puffs, 1)
+
+## Presentation quality: Low skips droplet bursts and trims the big splash.
+func set_effects_quality(low: bool) -> void:
+	low_effects = low
+	big_splash.amount = 10 if low else 22
+
+## Fire one burst from `seat`'s rear, pointing away from the float centre.
+func emit_burst(seat: int, pose: Transform3D) -> void:
+	var idle_emitter: CPUParticles3D = null
+	for burst: CPUParticles3D in burst_pools[seat]:
+		if not burst.emitting:
+			idle_emitter = burst
+			break
+	if idle_emitter == null:
+		return # Hard cap reached: skip this burst rather than spawn more puffs.
+	var config: FartConfig = FartConfig.current
+	var outward: Vector3 = (pose.basis * orbit.visual_offset(seat, 1.0)).slide(Vector3.UP).normalized()
+	var rear: Vector3 = pose * orbit.visual_offset(seat, SharedRingPreview.SEAT_RADIUS + 0.62, 0.55)
+	idle_emitter.global_position = rear
+	idle_emitter.direction = (outward + Vector3.UP * 0.4).normalized()
+	# The cloud is blown back against the float's motion, so it streams behind and bends in turns.
+	idle_emitter.gravity = Vector3(0, config.puff_rise, 0) - linear_velocity.slide(Vector3.UP) * config.puff_drag
+	idle_emitter.restart()
+	bursts_fired[seat] += 1
+	visual.burst(seat, pose.basis.inverse() * outward)
+	if config.splash and splash_height_valid:
+		# Where the cloud pushes off the water: a foam ring and a few droplets.
+		var turn: int = splash_turn[seat]
+		splash_turn[seat] = 1 - turn
+		var spot: Vector3 = rear + outward * 0.9
+		var at: Vector3 = Vector3(spot.x, splash_height + 0.06, spot.z)
+		var splash: CPUParticles3D = splashes[seat * 2 + turn]
+		splash.global_position = at
+		splash.restart()
+		if not low_effects and config.splash_droplets > 0:
+			var droplets: CPUParticles3D = droplet_pools[seat][turn]
+			droplets.global_position = at
+			droplets.restart()
+	if config.burst_sound:
+		Audio.play_sfx("attack", (0.91 + seat * 0.07) * (1.0 + visual_rng.randf_range(-config.sound_pitch_jitter, config.sound_pitch_jitter)))
+	fart_burst.emit(seat)
 
 func set_aim_input(seat: int, direction_world: Vector3) -> bool:
 	if seat < 0 or seat >= MAX_RIDERS or seat_control[seat] == "empty" or not simulate or falling:
@@ -193,8 +308,8 @@ func release_all_inputs() -> void:
 		if feedback_active[index]:
 			feedback_active[index] = false
 			thrust_stopped.emit(index)
-	for jet: CPUParticles3D in jets:
-		jet.emitting = false
+	# Bursts already in the air finish and fade on their own; just stop new ones.
+	burst_timers.fill(0.0)
 	if is_instance_valid(spray):
 		spray.emitting = false
 
@@ -259,7 +374,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			var direction: Vector3 = aim[index].slide(frame.normal).normalized()
 			var burn: float = minf(gas[index], profile.gas_drain * strength[index] * delta)
 			var available: float = burn / maxf(profile.gas_drain * strength[index] * delta, 0.000001)
-			var force: Vector3 = direction * mass * profile.thrust_acceleration * strength[index] * available / pow(float(occupied), 0.72)
+			var force: Vector3 = direction * mass * profile.thrust_acceleration * FartConfig.current.push_scale * strength[index] * available / pow(float(occupied), 0.72)
 			var offset: Vector3 = state.transform.basis * orbit.offset(index, SharedRingPreview.SEAT_RADIUS, 0.08)
 			state.apply_force(force, offset)
 			gas[index] -= burn
@@ -306,31 +421,105 @@ func respawn_at_checkpoint() -> void:
 	reset_physics_interpolation()
 	recovered.emit()
 
+## Big splash where the float hits the water (landing, bottom of a drop, falling in).
+func splash_at(at: Vector3, strength: float) -> void:
+	big_splash.global_position = at
+	big_splash.initial_velocity_max = 3.0 + 3.0 * strength
+	big_splash.restart()
+	big_ring.global_position = at
+	big_ring.restart()
+
+func celebrate() -> void:
+	celebrating = true
+
 func _process(delta: float) -> void:
 	var pose: Transform3D = get_global_transform_interpolated()
 	var presenting: bool = simulate or (remote_replica and remote_playing)
+	var to_local: Basis = pose.basis.inverse()
+	if delta > 0.0:
+		var acceleration: Vector3 = ((linear_velocity - last_velocity) / delta).limit_length(25.0)
+		last_velocity = linear_velocity
+		smoothed_acceleration = smoothed_acceleration.lerp(acceleration, 1.0 - exp(-8.0 * delta))
+		# Split the float's acceleration into surge (along its motion) and turn (sideways):
+		# riders lean back on surges and into turns, the float dips the other way.
+		var planar: Vector3 = linear_velocity.slide(Vector3.UP)
+		var flat: Vector3 = smoothed_acceleration.slide(Vector3.UP)
+		var heading: Vector3 = planar.normalized() if planar.length() > 0.6 else Vector3.ZERO
+		var surge_part: Vector3 = heading * flat.dot(heading)
+		visual.set_float_motion(to_local * (-surge_part * 0.9 + (flat - surge_part) * 0.8))
+	if contact_count != seen_contacts:
+		if contact_count > seen_contacts and not falling:
+			var hit: Vector3 = contact_direction if contact_direction.length_squared() > 0.01 else linear_velocity.slide(Vector3.UP)
+			var from: Vector3 = to_local * hit.normalized() if hit.length_squared() > 0.01 else Vector3.ZERO
+			visual.impact(from, clampf(linear_velocity.length() / 6.0, 0.5, 1.2))
+		seen_contacts = contact_count
+	visual.set_mood("panic" if falling else ("cheer" if celebrating else "ride"))
 	visual.animate_riders(firing if presenting and not falling else quiet_firing, orbit_motion if presenting and not falling else quiet_motion, delta)
-	for index: int in range(jets.size()):
-		jets[index].global_position = pose * orbit.offset(index, 1.70, 0.44)
-		jets[index].direction = -aim[index] + Vector3.UP * 0.15
-		jets[index].emitting = firing[index] and presenting and not falling
-		var active: bool = jets[index].emitting and held[index]
+	var interval: float = 1.0 / maxf(FartConfig.current.burst_rate, 0.1)
+	for index: int in range(MAX_RIDERS):
+		# Only a seat that is really firing (its own input, its own gas) puffs.
+		var live: bool = firing[index] and presenting and not falling
+		var active: bool = live and held[index]
 		if active != feedback_active[index]:
 			feedback_active[index] = active
 			if active:
 				thrust_started.emit(index)
+				burst_timers[index] = 0.0
 			else:
 				thrust_stopped.emit(index)
+		if live:
+			burst_timers[index] -= delta
+			if burst_timers[index] <= 0.0:
+				emit_burst(index, pose)
+				burst_timers[index] = maxf(burst_timers[index] + interval, interval * 0.5)
+		else:
+			burst_timers[index] = 0.0
+		tags[index].visible = seat_control[index] != "empty" and not falling
+		tags[index].global_position = pose.origin + (pose.basis * orbit.visual_offset(index, SharedRingPreview.SEAT_RADIUS - 0.35)).slide(Vector3.UP) + Vector3.UP * 2.55
 	if path != null:
 		var at: Vector3 = pose.origin
 		var frame: Dictionary = path.surface_at(at, route_s)
 		ripple.visible = frame.valid and not falling and absf(at.y - frame.height) < 1.4
+		if falling and not was_falling and splash_height_valid:
+			splash_at(Vector3(at.x, splash_height + 0.05, at.z), 1.0)
+		was_falling = falling
+		splash_height = frame.height
+		splash_height_valid = ripple.visible
+		# Waves: the float dips toward the downhill side and bobs; plus its own motion dip.
+		var wave: Vector3 = path.water_style.displacement(frame.s, frame.offset, path.water_time)
+		var uphill: Vector3 = frame.tangent * wave.y + frame.lateral * wave.z
+		visual.set_dip(to_local * (-smoothed_acceleration.slide(Vector3.UP) * 0.012 - uphill * 0.9), wave.x * 0.35 if ripple.visible else 0.0)
+		if delta > 0.0:
+			# Landings and the bottom of steep drops throw a big splash and bounce the crew.
+			vertical_speed = lerpf(vertical_speed, (at.y - previous_height) / delta, 1.0 - exp(-20.0 * delta))
+			previous_height = at.y
+			var above: float = at.y - frame.height
+			if vertical_speed < -3.0:
+				descent = minf(descent, vertical_speed)
+			if frame.valid and above > 0.75:
+				airborne = true
+			elif ripple.visible and presenting and ((airborne and above < 0.45) or (descent < -3.0 and vertical_speed > -0.8)):
+				var strength: float = clampf(-minf(descent, vertical_speed) / 6.0, 0.3, 1.2)
+				splash_at(Vector3(at.x, frame.height + 0.05, at.z), strength)
+				visual.land(strength)
+				airborne = false
+				descent = 0.0
+			if not ripple.visible:
+				descent = 0.0
 		ripple.global_transform = Transform3D(Basis.looking_at(frame.tangent, frame.normal), Vector3(at.x, frame.height + 0.04, at.z))
 		var velocity: Vector3 = linear_velocity.slide(frame.normal)
 		spray.global_position = Vector3(at.x, frame.height + 0.12, at.z) - velocity.normalized() * 2.3
 		spray.direction = (-velocity.normalized() + Vector3.UP * 1.4).normalized()
 		spray.emitting = ripple.visible and presenting and velocity.length() > 2.0
+		wake.global_position = Vector3(at.x, frame.height + 0.05, at.z)
+		wake.emitting = ripple.visible and presenting and velocity.length() > 1.2
 
-func _on_contact(_body: Node) -> void:
+func _on_contact(body: Node) -> void:
+	# Presentation: remember which side was hit (a moving hazard, or the nearest bank).
+	if body is AnimatableBody3D:
+		contact_direction = ((body as Node3D).global_position - global_position).slide(Vector3.UP)
+	elif path != null:
+		var frame: Dictionary = path.project(global_position, route_s)
+		contact_direction = frame.lateral * signf(frame.offset)
 	contact_count += 1
 	bumped.emit()

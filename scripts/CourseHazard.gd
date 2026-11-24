@@ -168,6 +168,23 @@ func evaluate(time: float) -> Transform3D:
 		"whirlpool": result.basis = Basis(Vector3.UP, angle)
 	return result
 
+## Foam circle where this hazard meets the water, in route space (s, lateral, radius).
+## Radius <= 0 when the moving part is lifted clear of the water. Presentation only.
+func water_foam() -> Vector3:
+	var radius: float = {"bumper": 1.35, "sweeper": 0.45, "crossbar": 1.05, "gate": 1.3, "boulder": 1.2,
+		"crusher": 1.5, "mallet": 1.2, "whirlpool": 3.4}.get(kind, 0.0)
+	var offset: float = lateral
+	if moving:
+		offset += moving.position.x
+		if kind == "crusher" and moving.position.y > 1.6:
+			return Vector3(route_s, offset, -1.0)
+		if kind == "mallet":
+			var head: Vector3 = moving.transform * Vector3(0, -4.4, 0)
+			if head.y > 1.9:
+				return Vector3(route_s, offset, -1.0)
+			offset = lateral + head.x
+	return Vector3(route_s, offset, radius)
+
 func update_time(time: float) -> void:
 	if moving:
 		moving.transform = evaluate(time)

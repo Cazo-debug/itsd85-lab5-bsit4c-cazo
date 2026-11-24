@@ -5,7 +5,6 @@ extends Node
 const SAVE: String = "user://phase5_android_qa.cfg"
 const REPORT: String = "user://phase5_android_state.json"
 const FLAG: String = "user://phase5_android_check.flag"
-var elapsed: float = 0.0
 var sequence: int = 0
 var focus_out: int = 0
 var focus_in: int = 0
@@ -18,6 +17,11 @@ var four_firing_frames: int = 0
 var max_draw_calls: int = 0
 var max_primitives: int = 0
 var frame_summary: Dictionary = {}
+# Optional visual-evidence sequence (flag "showcase"); see VisualShowcase.
+var showcase_requested: bool = false
+var showcase: VisualShowcase
+var last_report_msec: int = 0
+var probe_variants: Variant = []
 
 static func requested() -> bool:
 	return "--android-check" in OS.get_cmdline_user_args() or (OS.has_feature("android") and OS.has_feature("debug") and FileAccess.file_exists(FLAG))
@@ -48,6 +52,19 @@ func _ready() -> void:
 		GameState.seen_tutorial = true
 		GameState.save_progress(SAVE)
 	solve = "--android-solve-check" in OS.get_cmdline_user_args() or options.get("solve") == true
+	showcase_requested = options.get("showcase") == true
+	probe_variants = options.get("probe", [])
+	if options.has("quality"):
+		GameState.settings.quality = "low" if options.get("quality") == "low" else "high"
+		GameState.settings.show_fps = true
+	if showcase_requested:
+		# Same crew as tools/capture_visual_pass.gd: four animals, four gas colours.
+		var profiles: Array[Dictionary] = CrewData.default_profiles()
+		profiles[0] = AvatarData.default_avatar()
+		for seat: int in range(4):
+			profiles[seat].toot = seat
+			GameState.set_profile(seat, profiles[seat])
+			GameState.assign_slot(seat, "local", seat)
 	if solve:
 		Engine.time_scale = 1.0 if options.get("realtime") == true else 3.0
 	print("ANDROID_CHECK_READY ", JSON.stringify({"solve": solve, "args": OS.get_cmdline_user_args()}))
@@ -83,7 +100,12 @@ func snapshot() -> Dictionary:
 		"solve": solve, "time_scale": Engine.time_scale,
 		"performance": {"fps": Engine.get_frames_per_second(), "frames": frame_times.size(),
 			"four_firing_frames": four_firing_frames, "max_draw_calls": max_draw_calls,
-			"max_primitives": max_primitives, "summary": frame_summary}}
+			"max_primitives": max_primitives, "summary": frame_summary,
+			"scale_3d": get_tree().root.scaling_3d_scale}}
+	if showcase_requested:
+		result["showcase"] = {"step": showcase.step if showcase else "", "frozen": showcase.frozen if showcase else false,
+			"finished": showcase.finished if showcase else false, "firing": showcase.summary() if showcase else {},
+			"probe": showcase.probe_results if showcase else {}}
 	if scene is SkyLevel:
 		var level: SkyLevel = scene
 		result["level"] = {"instance": level.get_instance_id(), "number": level.level_number, "state": SkyLevel.State.keys()[level.state],
@@ -96,7 +118,7 @@ func snapshot() -> Dictionary:
 			"stick_rect": rect(level.hud.controls.stick_rect()), "gas_rect": rect(level.hud.controls.gas_rect())}
 	return result
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	var scene: Node = get_tree().current_scene
 	var now: int = Time.get_ticks_usec()
 	if scene is SkyLevel and scene.state == SkyLevel.State.RACING:
@@ -117,10 +139,20 @@ func _process(delta: float) -> void:
 		# never mixed with the native-input acceptance run.
 		scene.brain.all_seats = true
 		scene.hud.controls.enabled = false
-	elapsed += delta
-	if elapsed < 0.15:
+	if showcase_requested and scene is SkyLevel and scene.state == SkyLevel.State.RACING and (showcase == null or not is_instance_valid(showcase)):
+		showcase = VisualShowcase.new()
+		showcase.level = scene
+		showcase.hold_seconds = 3.0
+		scene.add_child(showcase)
+		var variants: Variant = probe_variants
+		if variants is Array and not variants.is_empty():
+			showcase.probe(variants)
+		else:
+			showcase.run()
+	# Real time, so reports continue while a showcase capture freezes Engine.time_scale.
+	if Time.get_ticks_msec() - last_report_msec < 150:
 		return
-	elapsed = 0.0
+	last_report_msec = Time.get_ticks_msec()
 	sequence += 1
 	var file: FileAccess = FileAccess.open(REPORT + ".tmp", FileAccess.WRITE)
 	if file:

@@ -36,7 +36,10 @@ func _ready() -> void:
 		effects.append(effect)
 	music = AudioStreamPlayer.new()
 	music.name = "SkyTheme"
-	music.stream = looping(load("res://assets/audio/sky_theme.wav") as AudioStreamWAV)
+	# Lab rule: .ogg for music, .wav for short effects. OGG loops natively.
+	var theme: AudioStreamOggVorbis = load("res://assets/audio/sky_theme.ogg")
+	theme.loop = true
+	music.stream = theme
 	add_child(music)
 	apply_settings()
 

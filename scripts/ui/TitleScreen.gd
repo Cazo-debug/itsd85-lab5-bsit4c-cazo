@@ -14,8 +14,8 @@ func _ready() -> void:
 		get_tree().root.add_child.call_deferred(android_check)
 
 func build_menu() -> void:
-	content.add_child(label("TOOT TUBES", 62))
-	content.add_child(label("One ring. Four friends.\nReach the summit together.", 32))
+	content.add_child(label("TOOT TUBES", 72, "title"))
+	content.add_child(label("One ring. Four friends. Reach the summit together."))
 	build_preview(360)
 	var profiles: Array[Dictionary] = CrewData.sanitize_profiles(GameState.local_profiles)
 	var crew: Array[Dictionary] = []
@@ -23,6 +23,6 @@ func build_menu() -> void:
 		profiles[seat] = AvatarData.sanitize(profiles[seat])
 		crew.append(CrewData.make_slot("local", seat))
 	model.configure(profiles, crew, clampi(GameState.leader_profile, 0, 3))
-	content.add_child(label("Aim + hold to fart. Release to coast.\nOffline crew or 2-4 players on the same Wi-Fi.", 28))
-	button("Tap to start", start)
-	button("Exit", back)
+	content.add_child(label("Play solo, or with 2-4 friends on the same Wi-Fi", 0, "caption"))
+	button("Tap to start", start, content, "primary")
+	button("Exit", back, content, "ghost")

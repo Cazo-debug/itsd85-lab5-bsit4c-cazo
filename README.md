@@ -1,53 +1,56 @@
-# Toot Tubes
+# Toot Tubes – ITSD 85 Lab 5
 
-**Updated 2026-11-05: Phase 5 polish is under local acceptance.** Five curved, elevated courses share one physical ring and 1-4 cooperating riders. Host-authoritative LAN, original sustained audio/music, saved quality/motion settings and a four-rider title are available. Physical two-phone/four-phone play, phone performance and human acceptance remain pending. [Local checks and remaining gates](docs/PHASE5_TESTING.md) | [Implementation plan](IMPLEMENTATION_PLAN.md) | [Environment specification](ENVIRONMENT_SPEC.md).
+Team: Cazo – Carlos Fidel G. Castro (solo: design, programming, art, audio, testing)   Section: BSIT-4C   Platform: Android
 
-Godot 4.7.2 **standard** build, GDScript, Compatibility renderer. Courses, riders, scenery, icon and synthesized audio are original project work. Local build candidates are available; nothing has been published.
+## About the game
+**Toot Tubes** is a cooperative party game where up to four cartoon animals share one
+swim ring and steer it through sky-high waterpark courses using nothing but their farts.
+Each rider has their own gas; their pushes combine on the same ring, so the crew has to
+work together to dodge mallets, crushers and whirlpools before the timer runs out.
 
-## Run the updated game
+| Riders on the ring | One rider farting |
+|---|---|
+| ![Riders](docs/screenshots/riders_idle.png) | ![Fart burst](docs/screenshots/riders_thrust_one_rider.png) |
 
-Open `project.godot` in Godot and press **F5**. Choose **Tap to start -> Play -> Offline crew** to configure your crew, then **Start Sky Garden**. First-time players create/save a rider first. **Courses** on Main Menu or **Choose course** in the crew options opens Level Select; finish each course to unlock the next. **Practice** beside Start uses the first course without a timer; **Next area** moves between its seven sections.
+## How to play
+- **Left pad (AIM):** choose a direction. Your rider walks around the rim toward it.
+- **Right button (HOLD):** hold to fart and push the ring; release to coast.
+- Each rider has a **gas meter** that refills while resting; **beans** refill it faster.
+- **Goal:** get the whole crew to the finish before the timer ends (the goal is shown at the start of each level).
+- **Stars:** more than 50% of the time left = 3 stars, more than 25% = 2, otherwise 1. Falling sends the crew back to the last checkpoint while the clock keeps running.
+- **Unlocking:** Level 1 is open. Clear a level to unlock the next; locked levels show a lock. Progress is saved on the phone.
+- **Pause:** Resume, Restart, Sound on/off, Quit. Every screen has Back (the Android back gesture also works).
 
-To play without the editor, open **`export/TootTubes-0.7.0-rc1.exe`**. Settings includes sound, music volume, high/low quality, vibration, reduced motion and FPS display. Low quality reduces decoration while preserving the four-rider physics and courses.
+## Offline and online modes
+- **Offline (works in airplane mode):** Play → **Play offline**. Add up to three computer assistant riders in Crew Setup, then start a course from Level Select.
+- **Online (same Wi-Fi, 2–4 phones):**
+  1. Phone 1: Play → **Host a game**. The screen shows its IP (for example `192.168.1.23`).
+  2. Phone 2: Play → type that IP → **Join**.
+  3. Guests tap Ready, then the host taps **Start together**. Everyone controls their own rider on the same ring.
 
-For LAN, use **Play -> Host LAN crew** in one copy and **Join LAN crew** in the others. Enter `127.0.0.1` for another copy on this laptop, or the host's displayed Wi-Fi IP from another device. Guests mark Ready and the host starts. Everyone controls their assigned rider on the same ring. Any rider can pause; the host resumes/restarts/recovers. Switching laptop windows can pause the shared run through focus-loss handling. [LAN instructions and checks](docs/PHASE4_TESTING.md).
+  The host runs the ring and decides the result. If the host can't be reached within 5 seconds, or anyone disconnects, a message is shown and the game returns to Mode Select. Online results do not change offline unlocks.
 
-From PowerShell in this project folder:
+## How to build
+- Godot **4.7.2 standard** (not .NET), Compatibility renderer. Open `project.godot` and press **F5**.
+- Android export:
+  1. Install OpenJDK 17 and the Android SDK, then set both paths in Editor Settings → Export → Android.
+  2. Install the export templates (Editor → Manage Export Templates).
+  3. Project → Export → **Android Release** (package `com.itsd85.cazo.toottubes`, version 1.0) → Export Project with *Export With Debug* off.
+  4. Signing uses your own release keystore, which is never committed. `tools/build_phase5.ps1` builds and verifies the debug, release and Windows builds.
+- Tests: `bash tools/run_tests.sh` (GUT, headless) and `bash tools/net_smoke.sh` (two- and four-phone LAN simulation).
 
-```powershell
-& .\.bin\Godot_v4.7.2-stable_win64.exe --path .
-```
+## Download
+**v1.0 release APK:** <link to the GitHub v1.0 release>. Install it on Android 7.0 or later and allow "Install unknown apps".
 
-If the local engine is missing, run `.\tools\setup_godot.ps1` first.
+## Playtest results
+*To be filled in after the playtest (see `docs/playtest/`):*
+1. Finding 1 → fix → retest result
+2. Finding 2 → fix → retest result
+3. Finding 3 → fix → retest result
 
-## Crew and controls
+## Credits
+All art, models, music and sound effects are original. Font: Fredoka (SIL OFL). Engine: Godot (MIT).
+Full list: [docs/CREDITS.md](docs/CREDITS.md).
 
-In Crew Setup, select a seat and cycle **Seat** through Empty, Assistant and Local rider. Pick an unused profile with the arrows; **Edit rider** changes that profile and **Make leader** chooses the shared ring style. Keep at least one local rider. **Control this seat** selects the phone/primary keyboard seat. Assistants now steer with the same gas and physics rules.
-
-- Desktop: **WASD** aims and moves the selected rider around the rim; hold **Space** to fart, release to coast. Aim is relative to the camera.
-- Touch: aim/move your rider with the left pad and hold the right pad with another finger. Release or drag outside HOLD to stop. Centering AIM also stops thrust.
-- Independent debug seats: seat 2 **IJKL + U**, seat 3 **TFGH + R**, seat 4 **arrows + Enter**. Primary WASD controls the selected seat; its duplicate binding is skipped. Keyboard rollover can limit simultaneous physical keys.
-- **Pause** opens Resume, Restart, Sound and Quit. **Recover** and **Back/Escape** remain available. A fall clears input and returns the entire crew to its checkpoint while the clock continues. Release and press again after pause/recovery. Results offer Retry, Next when allowed, and Menu.
-
-Sky Garden introduces bends, bridge, climb, hairpin, descent/dip and six hazard types. Canyon Switchbacks, Cloud Bridges, Spiral Springs and Festival Summit add paired mallets, sliding spiked gates, crushers, boulders, whirlpools and mixed timings. Each course has two ordered safe checkpoints and its own time budget. Each rider has independent gas; resting and beans replenish it.
-
-Existing version-2 profiles/progress are preserved. Original save migration backups remain supported. The old solo course exists only under `scenes/legacy/` for regression checks.
-
-## Android and verification
-
-Current development APK: `export/TootTubes-phase5-debug.apk` (0.7.0-rc1, code 11). Local release candidate: `export/TootTubes-0.7.0-rc1-release.apk`, using a separate package identity. Build/signature checks do not establish Android runtime acceptance. Earlier APKs remain separate. The export folder is intentionally ignored by Git. [Phase 5 checks and phone checklist](docs/PHASE5_TESTING.md).
-
-```powershell
-.\tools\run_tests.ps1
-& 'C:\Program Files\Git\bin\bash.exe' tools/net_smoke.sh
-& .\.bin\Godot_v4.7.2-stable_win64_console.exe --headless --fixed-fps 60 --path . --script tools/verify_sky_garden.gd -- --crew=4 --seed=1
-.\tools\run_campaign_checks.ps1 -IncludeAssistants
-```
-
-Git Bash/Linux: `bash tools/run_tests.sh`. Tests and verification tools use disposable save files.
-
-[Android emulator checks](docs/ANDROID_EMULATOR_TESTING.md) cover native two-finger input, Back/Home, reinstall/relaunch and a separate scripted offline run. The installed emulator currently fails rendering acceptance; its 55 passing behavior checks are recorded separately. Phone APKs remain ARM builds; the x86-64 emulator fixture stays in `.bin/`.
-
-See [the Phase 3 testing guide](docs/PHASE3_TESTING.md) for campaign checks, fresh-process reload, captures, profiling and deferred phone steps. [UI/gameplay boundaries](docs/UI_LOGIC_BOUNDARIES.md) identifies where visual changes belong. [Progress](docs/PROGRESS.md) separates automated/rendered results from pending human/device gates. The earlier uninterrupted **scripted** Sky Garden recording remains `export/TootTubes-phase2-water-riders-demo.mp4`.
-
-The [water/rider revision guide](docs/PHASE2_WATER_RIDERS.md) explains the shared profiles, new behavior and focused acceptance checks. Earlier APKs and captures remain historical.
+## Paper
+[docs/paper.pdf](docs/paper.pdf)

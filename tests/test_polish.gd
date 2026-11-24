@@ -48,8 +48,9 @@ func test_low_quality_preserves_all_four_riders_and_physics_contract() -> void:
 	SettingsFlow.apply_quality(level, true)
 	assert_eq(level.player.visual.riders.size(), 4)
 	assert_false(level.course.decor.clouds.visible)
-	assert_eq(level.player.jets[3].amount, 6)
+	assert_eq(level.player.jets[3].amount, FartConfig.current.puffs_per_burst_low)
 	assert_eq(level.player.spray.amount, 12)
+	assert_eq(level.player.wake.amount, 4)
 	assert_eq(level.player.mass, profile.mass)
 	assert_eq(level.course.path.length, profile.path)
 	assert_eq(level.player.collision_mask, profile.collisions)
@@ -57,8 +58,9 @@ func test_low_quality_preserves_all_four_riders_and_physics_contract() -> void:
 	assert_eq(level.course.hazards.size(), profile.hazards)
 	SettingsFlow.apply_quality(level, false)
 	assert_true(level.course.decor.clouds.visible)
-	assert_eq(level.player.jets[3].amount, 10)
+	assert_eq(level.player.jets[3].amount, FartConfig.current.puffs_per_burst)
 	assert_eq(level.player.spray.amount, 24)
+	assert_eq(level.player.wake.amount, 8)
 
 func test_audio_follows_actual_thrust_and_stops_on_pause_fall_finish_and_exit() -> void:
 	var level: SkyLevel = SkyLevel.new()

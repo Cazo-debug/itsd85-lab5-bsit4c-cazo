@@ -19,8 +19,9 @@ static func cliff() -> ShaderMaterial:
 static func install(parent: Node) -> void:
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.name = "SkySun"
-	sun.rotation_degrees = Vector3(-60, -30, 0)
-	sun.light_energy = 0.5
+	sun.rotation_degrees = Vector3(-55, -35, 0)
+	sun.light_color = Color("fff3dc")
+	sun.light_energy = 0.62
 	sun.shadow_enabled = false
 	parent.add_child(sun)
 	var world: WorldEnvironment = WorldEnvironment.new()
@@ -34,8 +35,11 @@ static func install(parent: Node) -> void:
 	sky.radiance_size = Sky.RADIANCE_SIZE_32
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color.WHITE
+	environment.ambient_light_color = Color("eef8ff")
 	environment.ambient_light_energy = 0.6
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	# No engine fog: on the Mali-G57 MP1 test phone it cost ~14 ms per frame. The distance
+	# haze is faked where it shows (cliff shader, sky horizon band, cloud cards).
+	environment.fog_enabled = false
 	world.environment = environment
 	parent.add_child(world)

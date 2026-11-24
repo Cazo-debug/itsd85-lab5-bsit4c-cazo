@@ -13,7 +13,7 @@ import time
 from PIL import Image
 
 REPO = Path(__file__).resolve().parent.parent
-PACKAGE = 'com.itsd85.toottubes.prototype'
+PACKAGE = 'com.itsd85.cazo.toottubes.debug'
 HELPER = 'com.itsd85.toottubes.qa'
 STATE = 'files/phase5_android_state.json'
 
@@ -178,7 +178,7 @@ class AndroidChecks:
         self.scene('MainMenu')
         self.tap('Play')
         self.scene('ModeSelect')
-        self.tap('Offline crew')
+        self.tap('Play offline')
         self.scene('CrewSetup')
         self.tap('Start Sky Garden')
         return self.wait(lambda s: s.get('level', {}).get('state') == 'RACING', 'Normal Android countdown starts race', timeout=60)

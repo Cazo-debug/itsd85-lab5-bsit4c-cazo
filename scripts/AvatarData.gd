@@ -1,6 +1,8 @@
 class_name AvatarData
 extends RefCounted
 
+# The saved "skin" index selects the rider animal (same 0-5 range, so saves and LAN data stay compatible).
+const ANIMALS: Array[String] = ["hippo", "pig", "panda", "penguin", "bunny", "cat"]
 const SKIN_TONES: Array[Color] = [Color("ffdbb4"), Color("efbb8c"), Color("ce9468"), Color("a66a43"), Color("78472e"), Color("492d24")]
 const OUTFIT_COLORS: Array[Color] = [Color("ff6c64"), Color("ffcf50"), Color("7acb3b"), Color("46cfe0"), Color("5289ee"), Color("9566df"), Color("f581bd"), Color("f5f6ef")]
 const FLOAT_STYLES: Array[String] = ["donut", "striped", "duck", "lifebuoy"]

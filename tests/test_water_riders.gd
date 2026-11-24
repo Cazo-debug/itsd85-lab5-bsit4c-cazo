@@ -36,13 +36,16 @@ func test_charge_color_tracks_actual_thrust_and_cools_on_release() -> void:
 	for frame: int in range(30):
 		rider.animate_activity(1.0 / 60, true, 1.0)
 	assert_almost_eq(rider.thrust_heat, 1.0, 0.001)
-	assert_gt(rider.charge_material.albedo_color.r, 0.95)
-	assert_lt(rider.charge_material.albedo_color.g, 0.3)
+	# The butt is part of the sculpted body now; its glow colour goes to the body's toon shader.
+	assert_gt(rider.charge_color.r, 0.95)
+	assert_lt(rider.charge_color.g, 0.3)
+	assert_eq(rider.body_material.get_shader_parameter("butt_tint"), rider.charge_color, "The body shader receives the glow")
 	assert_lt(rider.body_root.rotation.x, -0.1)
 	for frame: int in range(40):
 		rider.animate_activity(1.0 / 60, false, 0.0)
 	assert_eq(rider.thrust_heat, 0.0)
-	assert_eq(rider.charge_material.albedo_color, AvatarData.OUTFIT_COLORS[rider.appearance.outfit])
+	assert_eq(rider.charge_color, rider.cheek_color, "Butt cools back to the animal colour")
+	assert_eq(rider.body_material.get_shader_parameter("butt_tint"), rider.cheek_color)
 
 func test_wave_profile_matches_height_gradients_and_renderer_parameters() -> void:
 	var path: CoursePath = CoursePath.new()

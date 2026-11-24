@@ -6,8 +6,8 @@ var volume_label: Label
 var toggles: Dictionary = {}
 
 func build_menu() -> void:
-	content.add_child(label("Settings", 44))
-	message = label("Preferences are saved on this device.\nSwipe up for more options.", 28)
+	content.add_child(label("Settings", 0, "heading"))
+	message = label("Changes are saved on this device", 0, "caption")
 	content.add_child(message)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -21,20 +21,20 @@ func build_menu() -> void:
 	var volume: HBoxContainer = HBoxContainer.new()
 	options.add_child(volume)
 	button("-", adjust_volume.bind(-0.1), volume).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	volume_label = label("", 28)
+	volume_label = label("")
 	volume_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	volume.add_child(volume_label)
 	button("+", adjust_volume.bind(0.1), volume).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	for key: String in ["quality", "vibration", "reduced_motion", "show_fps"]:
 		toggles[key] = button("", toggle.bind(key), options)
-	options.add_child(label("Low quality reduces decorative clouds and particles.\nReduced motion softens camera turns; impact shake stays off.\nFPS is shown during gameplay.", 28))
-	button("Back", back)
+	options.add_child(label("Low quality: fewer clouds and particles.\nReduced motion: gentler camera, no shake.", 0, "caption"))
+	back_button()
 	refresh()
 
 func save_setting(key: String, value: Variant) -> void:
 	var error: Error = SettingsFlow.update(GameState, key, value)
 	Audio.apply_settings()
-	message.text = "Preference saved. Swipe up for more." if error == OK else "Could not save. Check storage and retry."
+	message.text = "Saved" if error == OK else "Could not save. Check storage and retry."
 	refresh()
 
 func toggle_sound() -> void:
@@ -52,4 +52,4 @@ func refresh() -> void:
 	volume_label.text = "Music\n%d%%" % roundi(GameState.settings.music_volume * 100)
 	toggles.quality.text = "Quality: %s" % GameState.settings.quality.capitalize()
 	for key: String in ["vibration", "reduced_motion", "show_fps"]:
-		toggles[key].text = "%s: %s" % [key.replace("_", " ").capitalize(), "On" if GameState.settings.get(key, key == "reduced_motion") else "Off"]
+		toggles[key].text = "%s: %s" % [{"show_fps": "Show FPS"}.get(key, key.replace("_", " ").capitalize()), "On" if GameState.settings.get(key, key == "reduced_motion") else "Off"]

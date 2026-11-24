@@ -18,10 +18,20 @@ static func update(game: Node, key: String, value: Variant) -> Error:
 	game.settings[key] = value
 	return game.save_progress(game.persistence_path)
 
+const LOW_3D_SCALE: float = 0.75
+
 static func apply_quality(level: Node3D, low: bool) -> void:
 	# Presentation only: never change route, support, hazards, gas or seat count.
-	for jet: CPUParticles3D in level.player.jets:
-		jet.amount = 6 if low else 10
+	# Low is the fallback for weak phones: fewer puffs and spray, no droplet bursts,
+	# one water texture layer (no streaks/sparkles), no cloud lobes or cloud cards,
+	# and the 3D view drawn at 75% resolution (the HUD stays sharp).
+	var config: FartConfig = FartConfig.current
+	level.player.set_puff_count(config.puffs_per_burst_low if low else config.puffs_per_burst)
 	level.player.spray.amount = 12 if low else 24
+	level.player.wake.amount = 4 if low else 8
+	level.player.set_effects_quality(low)
+	level.course.set_quality(low)
+	if level.is_inside_tree():
+		level.get_viewport().scaling_3d_scale = LOW_3D_SCALE if low else 1.0
 	if is_instance_valid(level.course.decor.clouds):
 		level.course.decor.clouds.visible = not low

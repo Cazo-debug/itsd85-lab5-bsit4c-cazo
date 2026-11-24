@@ -11,7 +11,7 @@ import tempfile
 def main():
     repo = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exe', default=str(repo / 'export' / 'TootTubes-0.7.0-rc1.exe'))
+    parser.add_argument('--exe', default=str(repo / 'export' / 'TootTubes-v1.0.exe'))
     parser.add_argument('--rendered', action='store_true')
     args = parser.parse_args()
     suffix = 'rendered' if args.rendered else 'headless'

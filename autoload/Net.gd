@@ -5,7 +5,7 @@ signal lobby_changed
 signal session_closed(message: String)
 const PORT: int = 7777
 const MAX_CLIENTS: int = 3
-const CONNECT_TIMEOUT_MS: int = 10000
+const CONNECT_TIMEOUT_MS: int = 5000 # lab PDF p. 18: 5-second join timer
 const SILENCE_TIMEOUT_MS: int = 8000
 const LOAD_TIMEOUT_MS: int = 15000
 var active: bool = false

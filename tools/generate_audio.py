@@ -3,6 +3,7 @@ from array import array
 from pathlib import Path
 import math
 import random
+import subprocess
 import sys
 import wave
 
@@ -61,7 +62,16 @@ def generate():
         low = math.sin(TAU * note(bass[beat // 4]) * low_time) * math.exp(-2.5 * low_time) * min(1, low_time / .02)
         return .24 * pluck + .14 * low
     write('sky_theme', 8, music, True)
-    print('Generated 11 original mono PCM WAV assets at 22050 Hz.')
+    encode_music('sky_theme')
+    print('Generated 10 original WAV effects and 1 OGG Vorbis music loop at 22050 Hz.')
+
+
+def encode_music(name):
+    # The lab asks for .ogg music and .wav effects; ffmpeg must be on PATH.
+    source = OUTPUT / (name + '.wav')
+    target = OUTPUT / (name + '.ogg')
+    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', str(source), '-c:a', 'libvorbis', '-q:a', '5', str(target)], check=True)
+    source.unlink()
 
 
 if __name__ == '__main__':

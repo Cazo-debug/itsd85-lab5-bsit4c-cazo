@@ -172,7 +172,7 @@ func verify() -> void:
 	await frames(6)
 	await click("Play")
 	check(current_scene.name == "ModeSelect", "Mouse events must open Mode Select")
-	await click("Offline crew")
+	await click("Play offline")
 	check(current_scene.name == "CrewSetup", "Mouse events must open Crew Setup")
 	await click("Start Sky Garden")
 	check(current_scene.name == "Level01", "Mouse events must launch the production course")

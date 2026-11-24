@@ -10,6 +10,14 @@ func reset() -> void:
 func offset(seat: int, radius: float, height: float = 0.0) -> Vector3:
 	return Vector3(sin(angles[seat]) * radius, height, cos(angles[seat]) * radius)
 
+# Where the animal is drawn: opposite the physics seat, so it sits at the rear of the
+# push, faces the hub, and farts outward like the reference clip. Visual only.
+func visual_offset(seat: int, radius: float, height: float = 0.0) -> Vector3:
+	return Vector3(-sin(angles[seat]) * radius, height, -cos(angles[seat]) * radius)
+
+func visual_angle(seat: int) -> float:
+	return wrapf(angles[seat] + PI, -PI, PI)
+
 func advance(aims: Array[Vector3], aiming: Array[bool], occupied: Array[String], basis: Basis, speed: float, delta: float) -> void:
 	for seat: int in range(4):
 		if occupied[seat] == "empty" or not aiming[seat]:

@@ -5,8 +5,8 @@ var message: Label
 var sound_button: Button
 
 func build_menu() -> void:
-	content.add_child(label("Choose a course" if screen == "LevelSelect" else "Settings", 44))
-	message = label("One ring. Finish together." if screen == "LevelSelect" else "Sound preference is saved on this device.", 28)
+	content.add_child(label("Choose a course" if screen == "LevelSelect" else "Settings", 0, "heading"))
+	message = label("Clear a course to unlock the next one" if screen == "LevelSelect" else "Sound preference is saved on this device.", 0, "caption")
 	content.add_child(message)
 	if screen == "LevelSelect":
 		var scroll: ScrollContainer = ScrollContainer.new()
@@ -17,22 +17,26 @@ func build_menu() -> void:
 		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		list.add_theme_constant_override("separation", 12)
 		scroll.add_child(list)
+		var lock: ImageTexture = UiTheme.lock_icon()
 		for card: Dictionary in CampaignFlow.course_cards(GameState):
-			var detail: String = "Locked - finish course %d" % (card.number - 1)
+			# R4: locked courses show a lock icon and cannot be opened.
+			var detail: String = "Locked - clear course %d first" % (card.number - 1)
 			if card.unlocked:
-				detail = "%d / 3 stars" % card.stars
+				detail = "★".repeat(card.stars) + "☆".repeat(3 - card.stars)
 				if card.time > 0:
-					detail += "  |  Best %.1f s" % card.time
+					detail += "   Best %.1f s" % card.time
 			var item: Button = button("%d. %s\n%s" % [card.number, card.name, detail], launch.bind(card.number), list)
 			item.disabled = not card.unlocked
-			item.add_theme_font_size_override("font_size", 28)
+			item.custom_minimum_size.y = 132
+			item.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			if not card.unlocked:
+				item.icon = lock
+				item.icon_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	else:
 		sound_button = button("", toggle_sound)
 		refresh_sound()
-		var spacer: Control = Control.new()
-		spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		content.add_child(spacer)
-	button("Back", back)
+		spacer()
+	back_button()
 
 func launch(number: int) -> void:
 	var error: String = CampaignFlow.launch_error(GameState, number)

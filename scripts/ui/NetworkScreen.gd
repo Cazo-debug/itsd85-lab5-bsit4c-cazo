@@ -10,8 +10,8 @@ var course_button: Button
 var connection_button: Button
 
 func build_menu() -> void:
-	content.add_child(label("One ring. One crew.", 44))
-	message = label("", 28)
+	content.add_child(label("Crew lobby" if screen == "Lobby" else "How do you want to play?", 0, "heading"))
+	message = label("", 0, "caption")
 	content.add_child(message)
 	if screen == "Lobby":
 		build_lobby()
@@ -20,19 +20,31 @@ func build_menu() -> void:
 
 func build_modes() -> void:
 	message.text = Net.status_message
-	button("Offline crew", go.bind("CrewSetup"))
-	button("Host LAN crew", host_crew)
-	content.add_child(label("Same Wi-Fi / host IP / port 7777", 28))
+	spacer(content, 12)
+	# R8: two clearly separated choices, Offline and Online.
+	content.add_child(section_title("OFFLINE - no internet needed"))
+	button("Play offline", go.bind("CrewSetup"), content, "primary")
+	content.add_child(label("Solo, or with computer helper riders", 0, "caption"))
+	spacer(content, 24)
+	content.add_child(section_title("ONLINE - phones on the same Wi-Fi"))
+	button("Host a game", host_crew)
+	var join_row: HBoxContainer = row()
 	ip_field = LineEdit.new()
 	ip_field.placeholder_text = "Host IP, e.g. 192.168.1.10"
 	ip_field.custom_minimum_size.y = 120
+	ip_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ip_field.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER_DECIMAL
-	content.add_child(ip_field)
-	connection_button = button("Join LAN crew", join_crew)
-	var spacer: Control = Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(spacer)
-	button("Back", back)
+	join_row.add_child(ip_field)
+	connection_button = button("Join", join_crew, join_row)
+	connection_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	connection_button.custom_minimum_size.x = 170
+	# Connection feedback sits right under the Join row, where the player is looking.
+	content.remove_child(message)
+	content.add_child(message)
+	message.add_theme_color_override("font_color", Color("b23a33"))
+	content.add_child(label("The host sees their IP after tapping Host a game.", 0, "caption"))
+	spacer()
+	back_button()
 	set_process(true)
 
 func build_lobby() -> void:
@@ -49,10 +61,15 @@ func build_lobby() -> void:
 		slot_labels.append(item)
 	course_button = button("", cycle_course)
 	ready_button = button("", toggle_ready)
-	start_button = button("Start together", Net.start_run)
-	button("Back / leave crew", back)
+	start_button = button("Start together", Net.start_run, content, "primary")
+	button("Back / leave crew", back, content, "ghost")
 	Net.lobby_changed.connect(refresh_lobby)
 	refresh_lobby()
+
+func section_title(text: String) -> Label:
+	var title: Label = label(text, 0, "caption")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	return title
 
 func host_crew() -> void:
 	if Net.host(GameState.avatar) == OK:
@@ -96,7 +113,7 @@ func _process(_delta: float) -> void:
 		return
 	var connecting: bool = Net.active and Net.phase == "connecting"
 	connection_button.disabled = connecting
-	connection_button.text = "Connecting..." if connecting else "Join LAN crew"
+	connection_button.text = "..." if connecting else "Join"
 	if connecting:
 		message.text = "Connecting to the host... Back cancels."
 
